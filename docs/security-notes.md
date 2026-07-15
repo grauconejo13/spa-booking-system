@@ -13,7 +13,7 @@ Treat all request values, route parameters, headers, cookies, seed imports, and 
 - Use PDO prepared statements for values and allowlist any dynamic column, direction, or identifier.
 - Configure `PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION`, `PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC`, and native prepares when compatible with the query.
 - Give runtime credentials only `SELECT`, `INSERT`, `UPDATE`, and `DELETE` access to the application schema.
-- Use constraints, transactions, and tested concurrency handling for booking consistency.
+- Use constraints, transactions, and tested concurrency handling for therapist assignment and booking consistency.
 
 ### Input and output
 
@@ -60,6 +60,6 @@ Treat all request values, route parameters, headers, cookies, seed imports, and 
 - Missing/invalid CSRF tokens fail every state-changing request.
 - Anonymous users cannot reach admin data or actions.
 - Session IDs change at login and are invalid after logout.
-- Booking collisions are rejected under concurrent requests.
+- Unqualified or unavailable therapists are rejected, and per-therapist booking collisions are rejected under concurrent requests.
 - Errors do not expose stack traces or configuration in production mode.
 - Dependencies and PHP packages report no known advisories at release time.

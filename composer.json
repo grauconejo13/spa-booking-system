@@ -26,7 +26,7 @@
     "scripts": {
         "test": "phpunit --colors=always",
         "lint": "phpcs --standard=PSR12 app config public routes tests",
-        "analyse": "phpstan analyse app config public routes --level=8",
+        "analyse": "phpstan analyse --configuration=phpstan.neon",
         "check": [
             "@composer validate --strict",
             "@lint",

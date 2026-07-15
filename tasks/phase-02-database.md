@@ -2,16 +2,14 @@
 
 ## Goal
 
-Create a repeatable MySQL schema, fictional demo data, and the minimum HTTP/application infrastructure needed by later features.
+Create a repeatable therapist-aware MySQL schema, fictional demo data, and persistence infrastructure for later features.
 
 ## Tasks
 
 - [ ] Decide and document the minimal migration runner.
-- [ ] Add migrations for `services`, `appointments`, and `admin_users` with constraints and indexes.
-- [ ] Add deterministic fictional service, appointment, and admin seeds.
-- [ ] Add validated environment loading and configuration bootstrap.
-- [ ] Create a PDO connection factory with safe attributes and clear connection errors.
-- [ ] Implement the minimal router, request/response handling, view renderer, and centralized error handling.
+- [ ] Add migrations for `services`, `therapists`, `therapist_services`, `therapist_availability`, `appointments`, and `admin_users` with constraints and indexes.
+- [ ] Add deterministic fictional services, therapists, qualifications, availability, appointments, and admin seeds.
+- [ ] Wire repositories to the Phase 1 PDO connection factory and handle connection errors safely.
 - [ ] Add repository interfaces only where substitution/testing requires them; avoid generic base repositories.
 - [ ] Add database reset/migrate/seed Composer scripts or documented commands.
 - [ ] Add integration tests for migrations, seeds, and repository mapping.
@@ -23,3 +21,4 @@ Create a repeatable MySQL schema, fictional demo data, and the minimum HTTP/appl
 - The runtime account operates with least-privileged grants.
 - PDO failures are handled without exposing credentials.
 - All committed records use obviously fictional data.
+- The schema supports many-to-many therapist qualifications, per-therapist availability, and per-therapist collision queries.

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-/*
- * Web routes will be declared here when the minimal router is introduced.
- * Keep route declarations explicit and free of business logic.
- */
+use SpaBooking\Controllers\HomeController;
+use SpaBooking\Http\Router;
 
-return [];
+return static function (Router $router, HomeController $home): void {
+    $router->get('/', [$home, 'index']);
+    $router->get('/services', [$home, 'services']);
+};

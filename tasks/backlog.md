@@ -4,7 +4,7 @@
 
 - [ ] Complete Phase 1 foundation checks
 - [ ] Implement database and persistence foundation
-- [ ] Implement public service catalogue and booking flow
+- [ ] Implement therapist-aware public service catalogue and booking flow
 - [ ] Implement admin authentication and appointment dashboard
 - [ ] Complete automated tests, accessibility review, and documentation polish
 
@@ -21,7 +21,8 @@
 
 - Payments or refunds
 - Real email/SMS delivery
-- Multi-location, staff, room, or equipment scheduling
+- Multi-location, treatment-room, or equipment scheduling
+- Therapist accounts, payroll, memberships, or staff workload optimization
 - Customer accounts or stored medical/treatment records
 - Framework migration or single-page application rewrite
 

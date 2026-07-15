@@ -6,7 +6,7 @@ Turn the completed MVP into a clear, reproducible, secure, and presentable portf
 
 ## Tasks
 
-- [ ] Raise unit/integration coverage around validation, availability, booking transactions, auth, and status rules.
+- [ ] Raise unit/integration coverage around validation, therapist qualification/availability, per-therapist booking transactions, auth, and status rules.
 - [ ] Add end-to-end smoke coverage for the customer and admin happy paths.
 - [ ] Run PHP_CodeSniffer, PHPStan, PHPUnit, Composer validation, and security audit in CI.
 - [ ] Review keyboard navigation, focus states, labels, error association, contrast, and responsive layouts.

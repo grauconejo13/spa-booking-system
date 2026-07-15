@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    paths:
+        - app
+        - config
+        - public
+        - routes
+    excludePaths:
+        analyse:
+            - app/Views
+

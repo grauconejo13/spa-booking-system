@@ -19,14 +19,14 @@ Controller -> PHP view -> HTML response
 ## Request lifecycle
 
 1. The web server sends all application requests to `public/index.php`.
-2. The front controller loads Composer, environment/configuration, shared dependencies, session/security middleware, and route declarations.
+2. The front controller loads Composer, environment/configuration, shared dependencies, central error handling, and route declarations. Session/security middleware is added only when later phases require it.
 3. A minimal router matches HTTP method and path to a controller action.
 4. The controller reads request data, delegates validation/use cases, and selects a response or view.
 5. Services enforce business rules and coordinate repository calls and transactions.
 6. Repositories execute PDO prepared statements and map rows to domain models or purpose-built result objects.
 7. Views receive explicit data and render escaped HTML.
 
-The router, request/response helpers, view renderer, environment loader, and dependency wiring will be introduced only as their first use requires them.
+Phase 1 provides the router, response object, base controller, view renderer, environment loader, PDO connection factory, explicit dependency wiring, shared layout, and central error handling. The PDO factory is intentionally not invoked by public pages until persistence arrives in Phase 2.
 
 ## Layer boundaries
 
@@ -43,11 +43,11 @@ Dependencies point inward from HTTP and persistence concerns toward application/
 
 `.env` holds local values and is excluded from Git. `.env.example` documents required keys. Configuration files return typed or well-documented arrays built from environment values; application code receives configuration rather than reading environment variables throughout the codebase.
 
-`config/database.php` currently provides a side-effect-free configuration array. The Phase 2 bootstrap will validate required values and create a single PDO connection with exceptions enabled, native prepares where supported, and associative fetch mode.
+`config/database.php` provides a side-effect-free configuration array. The Phase 1 PDO factory creates connections on demand with exceptions enabled, native prepares, and associative fetch mode; Phase 2 repositories will become its first consumers.
 
 ## Routing and rendering
 
-Routes will be declared explicitly in `routes/web.php`, grouped conceptually into public and admin routes. Route declarations should remain readable and must not contain business logic. PHP templates are chosen over a template engine to keep dependencies and learning surface small.
+Routes are declared explicitly in `routes/web.php`, grouped conceptually into public and future admin routes. Route declarations remain readable and contain no business logic. PHP templates are chosen over a template engine to keep dependencies and learning surface small.
 
 ## Error handling and logging
 
@@ -76,11 +76,11 @@ Routes will be declared explicitly in `routes/web.php`, grouped conceptually int
 
 **Rationale:** This is accessible, resilient, and appropriate for a PHP portfolio application.
 
-### ADR-004: One location and one treatment resource
+### ADR-004: One location with therapist-based capacity
 
-**Decision:** Model a single fictional spa resource rather than staff/resource allocation.
+**Decision:** Model one fictional spa location with multiple therapists. Services and therapists have a many-to-many qualification relationship, therapists own their availability, and every appointment is assigned to one therapist.
 
-**Rationale:** It preserves the central availability/concurrency problem while avoiding a production-scale scheduling engine. The choice is documented so a later resource model can be introduced deliberately.
+**Rationale:** Therapist choice is credible for a spa portfolio while keeping collision rules understandable. Rooms, equipment, multiple locations, payroll, and other operational resource planning remain explicitly excluded.
 
 ### ADR-005: Service snapshots on appointments
 
@@ -94,11 +94,16 @@ Routes will be declared explicitly in `routes/web.php`, grouped conceptually int
 
 **Rationale:** It makes time handling explicit and avoids dependence on server/database session time zones.
 
+### ADR-007: Deterministic assignment for "any therapist"
+
+**Decision:** Availability queries may show a time when at least one qualified therapist can perform the service. At booking time, the service rechecks candidates in a transaction and deterministically assigns an available therapist, initially by stable therapist ID order.
+
+**Rationale:** A concrete therapist is required for collision protection. Deterministic selection is testable and avoids implying workload optimization, payroll, or preference logic that is outside scope.
+
 ## Deferred decisions
 
-- Exact minimal router implementation and HTTP helper interfaces
 - Whether CSS growth justifies an SCSS build step
 - Migration runner implementation or selection
-- Availability locking strategy after a concurrency-focused prototype
+- Final availability locking strategy after a concurrency-focused prototype
 
 These should be resolved in the phase that first needs them and recorded here.

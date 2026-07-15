@@ -27,6 +27,45 @@
 
 Indexes: unique `slug`; index on `(is_active, display_order)`.
 
+### `therapists`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `BIGINT UNSIGNED` | Primary key, auto increment |
+| `name` | `VARCHAR(120)` | Required; fictional display name |
+| `slug` | `VARCHAR(140)` | Required, unique, public identifier |
+| `bio` | `TEXT` | Required, fictional public biography |
+| `is_active` | `BOOLEAN` | Required, default true |
+| `display_order` | `SMALLINT UNSIGNED` | Required, default 0 |
+| `created_at` | `DATETIME` | UTC |
+| `updated_at` | `DATETIME` | UTC |
+
+Indexes: unique `slug`; index on `(is_active, display_order)`.
+
+### `therapist_services`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `therapist_id` | `BIGINT UNSIGNED` | Foreign key to `therapists` |
+| `service_id` | `BIGINT UNSIGNED` | Foreign key to `services` |
+| `created_at` | `DATETIME` | UTC |
+
+Primary key: (`therapist_id`, `service_id`). This join table records qualification only; it does not introduce therapist-specific price or duration.
+
+### `therapist_availability`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `BIGINT UNSIGNED` | Primary key, auto increment |
+| `therapist_id` | `BIGINT UNSIGNED` | Foreign key to `therapists` |
+| `day_of_week` | `TINYINT UNSIGNED` | Required; ISO-8601 value 1 (Monday) through 7 (Sunday) |
+| `starts_at` | `TIME` | Required local wall-clock start |
+| `ends_at` | `TIME` | Required local wall-clock end, greater than start |
+| `created_at` | `DATETIME` | UTC |
+| `updated_at` | `DATETIME` | UTC |
+
+Indexes: (`therapist_id`, `day_of_week`, `starts_at`, `ends_at`). Initial scope supports recurring weekly windows only; date exceptions and time off are deferred until a demonstrated need.
+
 ### `appointments`
 
 | Column | Type | Notes |
@@ -34,6 +73,7 @@ Indexes: unique `slug`; index on `(is_active, display_order)`.
 | `id` | `BIGINT UNSIGNED` | Primary key, auto increment |
 | `reference` | `CHAR(12)` | Random, non-sequential, unique customer-facing reference |
 | `service_id` | `BIGINT UNSIGNED` | Foreign key to `services` |
+| `therapist_id` | `BIGINT UNSIGNED` | Foreign key to the assigned `therapists` row |
 | `service_name` | `VARCHAR(120)` | Snapshot at booking time |
 | `duration_minutes` | `SMALLINT UNSIGNED` | Snapshot at booking time |
 | `price_cents` | `INT UNSIGNED` | Snapshot at booking time |
@@ -47,13 +87,14 @@ Indexes: unique `slug`; index on `(is_active, display_order)`.
 | `created_at` | `DATETIME` | UTC |
 | `updated_at` | `DATETIME` | UTC |
 
-Indexes: unique `reference`; `(starts_at, ends_at, status)` for availability; `(status, starts_at)` for admin lists; `customer_email` for admin search if that feature is retained.
+Indexes: unique `reference`; `(therapist_id, starts_at, ends_at, status)` for availability; `(status, starts_at)` for admin lists; `customer_email` for admin search if that feature is retained.
 
-MySQL cannot express a general non-overlap exclusion constraint. The booking service will check for overlapping blocking appointments inside a transaction. The final locking/isolation approach must be verified with concurrent integration tests in Phase 3. The rule is:
+MySQL cannot express a general non-overlap exclusion constraint. The booking service will check the assigned therapist for overlapping blocking appointments inside a transaction. The final locking/isolation approach must be verified with concurrent integration tests in Phase 3. The rule is:
 
 ```sql
 existing.starts_at < requested_end
 AND existing.ends_at > requested_start
+AND existing.therapist_id = requested_therapist_id
 AND existing.status IN ('pending', 'confirmed')
 ```
 
@@ -75,12 +116,15 @@ Index: unique `email`.
 ## Relationships
 
 ```text
-services (1) -------- (many) appointments
+services (many) -- therapist_services -- (many) therapists
+therapists (1) ----- (many) therapist_availability
+services (1) ------- (many) appointments
+therapists (1) ----- (many) appointments
 
 admin_users is independent; session state is stored by PHP for the initial scope.
 ```
 
-Use `RESTRICT` for deleting a service referenced by appointments. Catalogue removal should normally set `is_active = false`, preserving history and referential integrity.
+Use `RESTRICT` for deleting a service or therapist referenced by appointments. Catalogue/staff removal should normally set `is_active = false`, preserving history and referential integrity. Deleting a service or therapist may cascade its join/availability rows only when no appointment reference prevents the parent deletion.
 
 ## Status transitions
 
@@ -99,4 +143,4 @@ Transitions are enforced in the service layer. The database limits status values
 
 ## Seeds and data policy
 
-Seeds will create a small service catalogue, several appointments across statuses, and one demo administrator. All values must be unmistakably fictional; use reserved `.test` email addresses. Never copy production or real customer data into seeds, tests, screenshots, or commits.
+Seeds will create a small service catalogue, multiple fictional therapists with overlapping qualifications and distinct availability, several appointments across statuses, and one demo administrator. All values must be unmistakably fictional; use reserved `.test` email addresses. Never copy production or real customer data into seeds, tests, screenshots, or commits.

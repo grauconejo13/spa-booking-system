@@ -7,13 +7,14 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 ## Planned feature summary
 
 - Public service catalogue with durations and prices
-- Customer booking flow with date/time selection and confirmation
-- Basic availability checks that prevent conflicting appointments
+- One fictional spa location with multiple fictional therapists and many-to-many service qualifications
+- Customer booking flow with therapist (or "any available therapist"), date/time selection, and confirmation
+- Per-therapist availability checks that prevent conflicting appointments
 - Admin sign-in and dashboard for reviewing and updating bookings
 - Server-side validation, CSRF protection, secure sessions, and prepared SQL
 - Responsive, accessible server-rendered pages with light JavaScript enhancement
 
-Only the project foundation is currently scaffolded. Booking and administration features are tracked in the roadmap and `tasks/` documents.
+Phase 1 provides the framework-free HTTP foundation plus home and temporary in-memory services pages. Database-backed booking and administration features are tracked in the roadmap and `tasks/` documents.
 
 ## Technology stack
 
@@ -37,15 +38,15 @@ composer install
 cp .env.example .env
 ```
 
-Edit `.env` with local database settings. The future bootstrap will load these variables; the initial scaffold intentionally does not include an environment-loader dependency or application container.
+Edit `.env` with local database settings. The application uses a small local environment loader and constructor-based wiring rather than an application container. Phase 1 does not connect to the database when rendering public pages.
 
 Start PHP's development server with the public directory as the document root:
 
 ```bash
-php -S localhost:8000 -t public
+php -S localhost:8000 -t public public/router.php
 ```
 
-Then visit `http://localhost:8000`. At this foundation stage, the front controller returns a placeholder page.
+Then visit `http://localhost:8000`; the services page is available at `http://localhost:8000/services`.
 
 ## Database setup
 
@@ -79,9 +80,9 @@ Screenshots will be added after the customer and admin interfaces exist.
 
 ## Roadmap
 
-- [x] Phase 1: repository foundation, architecture, and planning
-- [ ] Phase 2: database migrations, seed data, and PDO infrastructure
-- [ ] Phase 3: customer service catalogue and booking flow
+- [ ] Phase 1: HTTP foundation, public informational pages, and planning
+- [ ] Phase 2: therapist-aware database migrations, fictional seed data, and repositories
+- [ ] Phase 3: therapist-aware customer catalogue and booking flow
 - [ ] Phase 4: admin authentication and appointment dashboard
 - [ ] Phase 5: automated testing, accessibility, security review, and polish
 
@@ -89,4 +90,4 @@ Detailed implementation checklists live in [`tasks/`](tasks/), while product and
 
 ## Scope note
 
-This project is educational portfolio software, not a production medical, payment, or healthcare-record system. It does not process payments, send real notifications, or store real personal data.
+This project is educational portfolio software for one fictional location, not a production medical, payment, payroll, membership, or healthcare-record system. It does not schedule rooms/equipment, process payments, send real notifications, or store real personal data.

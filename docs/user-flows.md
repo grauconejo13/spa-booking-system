@@ -4,18 +4,20 @@
 
 1. Visitor opens the service catalogue.
 2. Visitor selects an active service and views its duration and price.
-3. Visitor chooses a future date.
-4. Server calculates valid times from business hours, service duration, interval, and blocking appointments.
-5. Visitor selects a time and enters name, email, optional phone, and optional note.
-6. Visitor reviews the request and submits a CSRF-protected form.
-7. Server normalizes and validates all fields, reloads the service, and rechecks availability.
-8. Within a transaction, the server prevents a collision and creates a `pending` appointment with snapshot values and a random reference.
-9. Visitor sees a confirmation page with the appointment summary and reference, but no sensitive data in the URL.
+3. Visitor selects a qualified therapist or chooses "any available therapist."
+4. Visitor chooses a future date.
+5. Server calculates valid times from qualified therapists, each therapist's availability, service duration, interval, and that therapist's blocking appointments.
+6. Visitor selects a time and enters name, email, optional phone, and optional note.
+7. Visitor reviews the request and submits a CSRF-protected form.
+8. Server normalizes and validates all fields, reloads the service and therapist choice, and rechecks availability.
+9. Within a transaction, the server locks/rechecks a qualified therapist, assigns that therapist (deterministically when "any" was chosen), prevents a per-therapist collision, and creates a `pending` appointment with snapshot values and a random reference.
+10. Visitor sees a confirmation page with the appointment summary, assigned therapist, and reference, but no sensitive data in the URL.
 
 Failure paths:
 
 - Invalid input returns the form with safe values and clear field errors.
 - A time taken between selection and submission returns the visitor to time selection with an explanation.
+- A selected therapist who is no longer qualified, active, or available cannot be booked; an "any" request fails clearly if no candidate remains.
 - An inactive/missing service or past date cannot be booked.
 - An unexpected persistence error shows a generic retry message and is safely logged.
 

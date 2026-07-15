@@ -10,7 +10,7 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 - [ ] Implement sign-in, sign-out, secure session settings, timeout, and session regeneration.
 - [ ] Add login throttling/backoff appropriate to the demo deployment.
 - [ ] Protect every admin route server-side.
-- [ ] Build an upcoming appointment dashboard with date/status filters and pagination if needed.
+- [ ] Build an upcoming appointment dashboard showing the assigned therapist, with date/status filters and pagination if needed.
 - [ ] Build an appointment detail view with minimally necessary customer information.
 - [ ] Enforce allowed status transitions in a service.
 - [ ] Protect all mutations and sign-out with CSRF tokens.

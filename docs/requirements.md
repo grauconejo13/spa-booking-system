@@ -7,6 +7,7 @@ Demonstrate end-to-end PHP 8.3 and MySQL 8 development through a credible but in
 ## Actors
 
 - **Visitor/customer:** browses services and submits an appointment request.
+- **Therapist:** a fictional staff member whose service qualifications and availability determine bookable times; therapists do not sign in during the MVP.
 - **Administrator:** signs in, reviews appointments, and changes appointment status.
 
 ## Functional requirements
@@ -15,10 +16,12 @@ Demonstrate end-to-end PHP 8.3 and MySQL 8 development through a credible but in
 
 - Display active spa services with a name, description, duration, and price.
 - Allow a customer to select one service, a future date, and an available start time.
+- Allow a customer to select a qualified therapist or choose "any available therapist."
 - Collect a customer name, email address, and optional phone number and note.
 - Revalidate all submitted values and availability on the server.
 - Create a pending appointment and show a non-sensitive confirmation reference.
-- Prevent overlapping active appointments for the single fictional treatment room/resource.
+- Assign exactly one qualified therapist to each appointment.
+- Prevent overlapping active appointments for the assigned therapist.
 
 ### Administration
 
@@ -44,7 +47,8 @@ Demonstrate end-to-end PHP 8.3 and MySQL 8 development through a credible but in
 
 - Real payments, gift cards, refunds, taxes, or invoicing
 - Email/SMS delivery and third-party calendar integrations
-- Multiple locations, rooms, practitioners, resources, or time zones
+- Multiple locations, treatment rooms, equipment scheduling, or multiple business time zones
+- Payments, notifications, memberships, payroll, or therapist self-service accounts
 - Customer accounts, loyalty programs, reviews, or waitlists
 - Recurring appointments and group bookings
 - Medical histories, treatment notes, or regulated health data
@@ -52,13 +56,17 @@ Demonstrate end-to-end PHP 8.3 and MySQL 8 development through a credible but in
 
 ## Initial business rules
 
-- The demo represents one spa location and one bookable treatment resource.
+- The demo represents one fictional spa location with multiple therapists.
+- A therapist can perform one or more services, and a service can be performed by one or more therapists.
+- Each therapist has their own recurring availability.
+- A customer-selected therapist must be qualified, available, and free for the complete appointment interval.
+- When the customer chooses "any available therapist," the server assigns one qualified, available therapist deterministically during booking.
 - Services are scheduled in fixed durations; appointment end time is derived from start time plus service duration at creation.
-- Appointments must fall within configured business hours and start on a configured interval.
-- `cancelled` appointments do not block availability; pending and confirmed appointments do.
+- Appointments must fall within the assigned therapist's availability and start on a configured interval.
+- `cancelled` appointments do not block a therapist's availability; pending and confirmed appointments do.
 - Historical appointment values should remain meaningful if a service later changes, so appointments snapshot service name, duration, and price.
 - Store appointment timestamps in UTC and convert at the presentation boundary using the configured spa time zone.
 
 ## Acceptance boundary for the portfolio release
 
-The release is complete when a reviewer can set up the database, load fictional data, complete one booking, observe collision prevention, sign in as the demo admin, manage that booking, and run the documented quality suite successfully.
+The release is complete when a reviewer can set up the database, load fictional data, book either a selected therapist or any available therapist, observe per-therapist collision prevention, sign in as the demo admin, manage that booking, and run the documented quality suite successfully.
