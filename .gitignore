@@ -1,0 +1,14 @@
+/.env
+/.env.*
+!/.env.example
+/vendor/
+/composer.phar
+/.phpunit.cache/
+/.phpunit.result.cache
+/.phpstan.cache/
+/.idea/
+/.vscode/
+/.DS_Store
+Thumbs.db
+/storage/logs/*
+!/storage/logs/.gitkeep
