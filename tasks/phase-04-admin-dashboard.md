@@ -6,7 +6,7 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 
 ## Tasks
 
-- [ ] Seed one fictional admin with a securely generated password hash.
+- [x] Seed one fictional admin with a securely generated password hash.
 - [ ] Implement sign-in, sign-out, secure session settings, timeout, and session regeneration.
 - [ ] Add login throttling/backoff appropriate to the demo deployment.
 - [ ] Protect every admin route server-side.

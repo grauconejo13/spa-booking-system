@@ -16,9 +16,9 @@ Create a documented, installable HTTP foundation with public informational pages
 - [x] Add lightweight automated tests for the router and practical foundation components.
 - [x] Document requirements, architecture, data design, flows, and security expectations.
 - [x] Document coding conventions, testing commands, and definition of done.
-- [ ] Run `composer install` and commit the generated `composer.lock` when dependency installation is authorized.
+- [x] Run `composer install` and commit the generated `composer.lock` when dependency installation is authorized.
 - [x] Add focused PHPUnit and PHPStan configuration; retain PSR-12 through the Composer lint script.
-- [ ] Run `composer check` once PHP 8.3 and Composer are available on the local `PATH`.
+- [x] Run `composer check` once PHP 8.3 and Composer are available on the local `PATH`.
 
 ## Acceptance criteria
 

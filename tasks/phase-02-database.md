@@ -6,14 +6,14 @@ Create a repeatable therapist-aware MySQL schema, fictional demo data, and persi
 
 ## Tasks
 
-- [ ] Decide and document the minimal migration runner.
-- [ ] Add migrations for `services`, `therapists`, `therapist_services`, `therapist_availability`, `appointments`, and `admin_users` with constraints and indexes.
-- [ ] Add deterministic fictional services, therapists, qualifications, availability, appointments, and admin seeds.
-- [ ] Wire repositories to the Phase 1 PDO connection factory and handle connection errors safely.
-- [ ] Add repository interfaces only where substitution/testing requires them; avoid generic base repositories.
-- [ ] Add database reset/migrate/seed Composer scripts or documented commands.
-- [ ] Add integration tests for migrations, seeds, and repository mapping.
-- [ ] Update database and architecture documents with final decisions.
+- [x] Decide and document the minimal migration runner.
+- [x] Add migrations for `services`, `therapists`, `therapist_services`, `therapist_availability`, `appointments`, and `admin_users` with constraints and indexes.
+- [x] Add deterministic fictional services, therapists, qualifications, availability, appointments, and admin seeds.
+- [x] Wire repositories to the Phase 1 PDO connection factory and handle connection errors safely.
+- [x] Add repository interfaces only where substitution/testing requires them; avoid generic base repositories.
+- [x] Add database reset/migrate/seed Composer scripts or documented commands.
+- [x] Add integration tests for migrations, seeds, and repository mapping.
+- [x] Update database and architecture documents with final decisions.
 
 ## Acceptance criteria
 

@@ -5,9 +5,8 @@
          cacheDirectory=".phpunit.cache"
          colors="true">
     <testsuites>
-        <testsuite name="Spa Booking Foundation">
+        <testsuite name="Spa Booking System">
             <directory>tests</directory>
         </testsuite>
     </testsuites>
 </phpunit>
-

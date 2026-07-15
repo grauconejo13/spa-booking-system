@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SpaBooking\Database;
 
 use PDO;
+use PDOException;
 
 final class PdoConnectionFactory
 {
@@ -26,11 +27,15 @@ final class PdoConnectionFactory
             $this->config['charset']
         );
 
-        return new PDO(
-            $dsn,
-            $this->config['username'],
-            $this->config['password'],
-            $this->config['options']
-        );
+        try {
+            return new PDO(
+                $dsn,
+                $this->config['username'],
+                $this->config['password'],
+                $this->config['options']
+            );
+        } catch (PDOException) {
+            throw new DatabaseConnectionException('Unable to connect to the database.');
+        }
     }
 }

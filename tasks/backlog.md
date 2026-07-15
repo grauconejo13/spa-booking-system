@@ -2,8 +2,8 @@
 
 ## Now: portfolio MVP
 
-- [ ] Complete Phase 1 foundation checks
-- [ ] Implement database and persistence foundation
+- [x] Complete Phase 1 foundation checks
+- [x] Implement database and persistence foundation
 - [ ] Implement therapist-aware public service catalogue and booking flow
 - [ ] Implement admin authentication and appointment dashboard
 - [ ] Complete automated tests, accessibility review, and documentation polish

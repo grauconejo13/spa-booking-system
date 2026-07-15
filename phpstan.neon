@@ -3,9 +3,9 @@ parameters:
     paths:
         - app
         - config
+        - database
         - public
         - routes
     excludePaths:
         analyse:
             - app/Views
-

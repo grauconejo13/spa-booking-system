@@ -25,8 +25,11 @@
     },
     "scripts": {
         "test": "phpunit --colors=always",
-        "lint": "phpcs --standard=PSR12 app config public routes tests",
+        "lint": "phpcs --standard=PSR12 app config database public routes tests",
         "analyse": "phpstan analyse --configuration=phpstan.neon",
+        "migrate": "php database/bin/migrate.php",
+        "migrate:rollback": "php database/bin/migrate.php --rollback",
+        "seed": "php database/bin/seed.php",
         "check": [
             "@composer validate --strict",
             "@lint",

@@ -14,7 +14,9 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 - Server-side validation, CSRF protection, secure sessions, and prepared SQL
 - Responsive, accessible server-rendered pages with light JavaScript enhancement
 
-Phase 1 provides the framework-free HTTP foundation plus home and temporary in-memory services pages. Database-backed booking and administration features are tracked in the roadmap and `tasks/` documents.
+Phases 1 and 2 provide the framework-free HTTP foundation, therapist-aware MySQL schema, fictional demo
+data, and focused PDO repositories. The public services page remains temporarily in-memory until the
+customer catalogue is connected in Phase 3.
 
 ## Technology stack
 
@@ -38,7 +40,9 @@ composer install
 cp .env.example .env
 ```
 
-Edit `.env` with local database settings. The application uses a small local environment loader and constructor-based wiring rather than an application container. Phase 1 does not connect to the database when rendering public pages.
+Edit `.env` with local database settings. The application uses a small local environment loader and
+constructor-based wiring rather than an application container. Public Phase 2 pages still do not open a
+database connection; repositories create one only when a persistence-backed use case needs it.
 
 Start PHP's development server with the public directory as the document root:
 
@@ -59,15 +63,32 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON spa_booking.* TO 'spa_app'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Copy the matching values into `.env`. Migrations and seed execution will be added in Phase 2; see `docs/database-design.md` for the proposed schema. Schema-management credentials may require temporary `CREATE`, `ALTER`, `INDEX`, and `DROP` permissions and should be separate from runtime credentials when practical.
+Copy the matching values into `.env`, then apply the schema and load deterministic fictional demo data:
+
+```bash
+composer migrate
+composer seed
+```
+
+`composer migrate` is safe to rerun and applies only migrations not recorded in the `migrations` ledger.
+`composer seed` is also repeatable for the committed demo records. The optional destructive rollback of
+the latest migration batch is `composer migrate:rollback`; use it only on a disposable local database.
+
+Schema-management credentials require `CREATE`, `ALTER`, `INDEX`, and `DROP` permissions. Use them only
+for migration work and keep the runtime application's account limited to `SELECT`, `INSERT`, `UPDATE`,
+and `DELETE`.
+
+MySQL integration tests are opt-in because they create and remove tables. Create an empty, disposable
+database whose name ends in `_test`, set `DB_TEST_DATABASE` and `RUN_DATABASE_TESTS=true`, and run
+`composer test`. Without that explicit flag, the database test class is skipped.
 
 ## Demo credentials
 
-Not available yet. Before the admin phase is published, fictional credentials will be documented here:
+The Phase 2 seed creates this fictional administrator for the future Phase 4 sign-in screen:
 
 ```text
-Email:    demo@example.test
-Password: <demo-password-placeholder>
+Email:    admin@example.test
+Password: SpaDemo!2026
 ```
 
 ## Screenshots
@@ -80,8 +101,8 @@ Screenshots will be added after the customer and admin interfaces exist.
 
 ## Roadmap
 
-- [ ] Phase 1: HTTP foundation, public informational pages, and planning
-- [ ] Phase 2: therapist-aware database migrations, fictional seed data, and repositories
+- [x] Phase 1: HTTP foundation, public informational pages, and planning
+- [x] Phase 2: therapist-aware database migrations, fictional seed data, and repositories
 - [ ] Phase 3: therapist-aware customer catalogue and booking flow
 - [ ] Phase 4: admin authentication and appointment dashboard
 - [ ] Phase 5: automated testing, accessibility, security review, and polish

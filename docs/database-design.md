@@ -8,7 +8,7 @@
 - Support deterministic fictional seed data.
 - Preserve a useful appointment history when catalogue data changes.
 
-## Proposed tables
+## Implemented tables
 
 ### `services`
 
@@ -136,11 +136,17 @@ Transitions are enforced in the service layer. The database limits status values
 
 ## Migrations
 
-- Migration files use timestamped names and contain explicit `up`/`down` behavior or paired SQL sections.
+- Migration files use timestamped names and return an object with explicit `up`/`down` behavior.
 - Each schema change is forward-applicable to an empty database.
-- Destructive rollback behavior must be clearly labeled and never run automatically in shared environments.
+- Applied files are recorded by filename and batch in the `migrations` table. `composer migrate` applies only pending files.
+- `composer migrate:rollback` reverses only the latest batch. It is destructive, clearly labeled, and must never be run automatically in shared environments.
+- MySQL DDL implicitly commits. The runner records a migration after `up` completes, but cannot promise transactional rollback of partially executed DDL; inspect a failed schema before retrying.
 - Runtime application credentials remain least-privileged; migration credentials may be separate.
 
 ## Seeds and data policy
 
-Seeds will create a small service catalogue, multiple fictional therapists with overlapping qualifications and distinct availability, several appointments across statuses, and one demo administrator. All values must be unmistakably fictional; use reserved `.test` email addresses. Never copy production or real customer data into seeds, tests, screenshots, or commits.
+`composer seed` creates three services, three therapists, overlapping qualifications, weekday availability, two future appointments, and one demo administrator. Stable identifiers and fictional values make reruns deterministic; the administrator password hash is safely regenerated with `password_hash()` on each run. All email addresses use the reserved `.test` domain. Never copy production or real customer data into seeds, tests, screenshots, or commits.
+
+## Integration-test isolation
+
+Database integration tests are opt-in. They require `RUN_DATABASE_TESTS=true` and a `DB_TEST_DATABASE` value ending in `_test`. The database must be empty, must be disposable, and must be different from the development database. The suite migrates, seeds, checks repeatability and repository mapping, then rolls the schema back.
