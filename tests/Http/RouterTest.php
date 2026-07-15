@@ -48,4 +48,3 @@ final class RouterTest extends TestCase
         $router->get('/', static fn (): Response => new Response('second'));
     }
 }
-

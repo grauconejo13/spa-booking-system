@@ -88,4 +88,3 @@ final class Environment
         return $value;
     }
 }
-

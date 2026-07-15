@@ -32,4 +32,3 @@ final class ViewRendererTest extends TestCase
         $this->renderer->render('../outside');
     }
 }
-

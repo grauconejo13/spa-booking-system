@@ -19,4 +19,3 @@ abstract class Controller
         return new Response($this->views->render($view, $data), $status);
     }
 }
-

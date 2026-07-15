@@ -41,4 +41,3 @@ final class Response
         echo $this->body;
     }
 }
-

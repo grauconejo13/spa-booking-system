@@ -43,15 +43,10 @@ final class ViewRenderer
     private function renderFile(string $file, array $data): string
     {
         ob_start();
+
         extract($data, EXTR_SKIP);
         require $file;
-        $output = ob_get_clean();
 
-        if ($output === false) {
-            throw new RuntimeException('Unable to render view.');
-        }
-
-        return $output;
+        return (string) ob_get_clean();
     }
 }
-
