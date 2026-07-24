@@ -11,7 +11,7 @@ Create a repeatable therapist-aware MySQL schema, fictional demo data, and persi
 - [x] Add deterministic fictional services, therapists, qualifications, availability, appointments, and admin seeds.
 - [x] Wire repositories to the Phase 1 PDO connection factory and handle connection errors safely.
 - [x] Add repository interfaces only where substitution/testing requires them; avoid generic base repositories.
-- [x] Add database reset/migrate/seed Composer scripts or documented commands.
+- [x] Add repeatable migrate, rollback, and seed Composer commands with documented safety boundaries.
 - [x] Add integration tests for migrations, seeds, and repository mapping.
 - [x] Update database and architecture documents with final decisions.
 

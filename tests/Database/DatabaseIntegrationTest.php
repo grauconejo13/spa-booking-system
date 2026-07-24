@@ -38,15 +38,20 @@ final class DatabaseIntegrationTest extends TestCase
             self::markTestSkipped('Set RUN_DATABASE_TESTS=true to run MySQL integration tests.');
         }
 
+        /** @var array{host: string, port: int, database: string, username: string,
+         *     password: string, charset: string, options: array<int, mixed>} $config */
+        $config = require $root . '/config/database.php';
+
         $database = getenv('DB_TEST_DATABASE');
 
         if (!is_string($database) || !str_ends_with($database, '_test')) {
             throw new RuntimeException('DB_TEST_DATABASE must name a dedicated database ending in _test.');
         }
 
-        /** @var array{host: string, port: int, database: string, username: string,
-         *     password: string, charset: string, options: array<int, mixed>} $config */
-        $config = require $root . '/config/database.php';
+        if ($database === $config['database']) {
+            throw new RuntimeException('DB_TEST_DATABASE must be different from DB_DATABASE.');
+        }
+
         $config['database'] = $database;
         self::$pdo = (new PdoConnectionFactory($config))->create();
         self::$migrations = new MigrationRunner(self::$pdo, $root . '/database/migrations');

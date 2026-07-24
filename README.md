@@ -79,8 +79,24 @@ for migration work and keep the runtime application's account limited to `SELECT
 and `DELETE`.
 
 MySQL integration tests are opt-in because they create and remove tables. Create an empty, disposable
-database whose name ends in `_test`, set `DB_TEST_DATABASE` and `RUN_DATABASE_TESTS=true`, and run
-`composer test`. Without that explicit flag, the database test class is skipped.
+database named `spa_booking_test`, then use these values in your uncommitted `.env` (keeping the same
+host, port, username, password, and charset as your local MySQL setup):
+
+```dotenv
+DB_DATABASE=spa_booking
+DB_TEST_DATABASE=spa_booking_test
+RUN_DATABASE_TESTS=true
+```
+
+`DB_TEST_DATABASE` must end in `_test` and must differ from `DB_DATABASE`; the test suite enforces both
+rules before it migrates, seeds, and removes its test tables. Run the full integration suite with:
+
+```bash
+composer test
+```
+
+Set `RUN_DATABASE_TESTS=false` again for the default unit-test run. Without the explicit `true` flag,
+the three MySQL integration tests are skipped.
 
 ## Demo credentials
 
