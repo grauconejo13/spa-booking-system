@@ -221,6 +221,22 @@ h2 {
     box-shadow: var(--shadow);
 }
 
+.catalog-message {
+    max-width: 42rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--cream);
+}
+
+.catalog-message h2 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+}
+
+.catalog-message p {
+    margin-bottom: 0;
+}
+
 .service-card h2,
 .service-card h3 {
     font-family: Georgia, serif;
@@ -317,4 +333,3 @@ h2 {
         display: flex;
     }
 }
-

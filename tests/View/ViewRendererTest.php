@@ -6,6 +6,7 @@ namespace SpaBooking\Tests\View;
 
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use SpaBooking\Models\Service;
 use SpaBooking\View\ViewRenderer;
 
 final class ViewRendererTest extends TestCase
@@ -30,5 +31,31 @@ final class ViewRendererTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $this->renderer->render('../outside');
+    }
+
+    public function testServicesViewEscapesDatabaseValuesAndFormatsDetails(): void
+    {
+        $service = new Service(
+            1,
+            '<script>Forest Facial</script>',
+            'forest-facial',
+            '<img src=x onerror=alert(1)>',
+            50,
+            8650,
+            true,
+            1
+        );
+
+        $html = $this->renderer->render('services', [
+            'title' => 'Spa services',
+            'services' => [$service],
+            'catalogError' => false,
+        ]);
+
+        self::assertStringContainsString('&lt;script&gt;Forest Facial&lt;/script&gt;', $html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
+        self::assertStringNotContainsString('<script>Forest Facial</script>', $html);
+        self::assertStringContainsString('50 minutes', $html);
+        self::assertStringContainsString('$86.50', $html);
     }
 }

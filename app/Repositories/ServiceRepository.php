@@ -7,7 +7,7 @@ namespace SpaBooking\Repositories;
 use PDO;
 use SpaBooking\Models\Service;
 
-final class ServiceRepository
+final class ServiceRepository implements ServiceCatalogRepository
 {
     public function __construct(private readonly PDO $pdo)
     {

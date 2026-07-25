@@ -26,7 +26,7 @@ Controller -> PHP view -> HTML response
 6. Repositories execute PDO prepared statements and map rows to domain models or purpose-built result objects.
 7. Views receive explicit data and render escaped HTML.
 
-Phase 1 provides the router, response object, base controller, view renderer, environment loader, PDO connection factory, explicit dependency wiring, shared layout, and central error handling. Phase 2 adds domain models, focused PDO repositories, a migration ledger/runner, and an idempotent fictional seeder. Public pages intentionally remain on the temporary catalogue until the Phase 3 customer flow is implemented.
+Phase 1 provides the router, response object, base controller, view renderer, environment loader, PDO connection factory, explicit dependency wiring, shared layout, and central error handling. Phase 2 adds domain models, focused PDO repositories, a migration ledger/runner, and an idempotent fictional seeder. Phase 3 begins by wiring the public services route to the PDO-backed service repository while the home page retains its temporary featured-service content.
 
 ## Layer boundaries
 

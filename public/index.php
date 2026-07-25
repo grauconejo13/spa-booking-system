@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 use SpaBooking\Config\Environment;
 use SpaBooking\Controllers\HomeController;
+use SpaBooking\Controllers\ServicesController;
+use SpaBooking\Database\PdoConnectionFactory;
 use SpaBooking\Http\ErrorHandler;
 use SpaBooking\Http\Response;
 use SpaBooking\Http\Router;
+use SpaBooking\Repositories\ServiceRepository;
 use SpaBooking\Services\InMemoryServiceCatalog;
 use SpaBooking\View\ViewRenderer;
 
@@ -35,7 +38,16 @@ try {
     $errors = new ErrorHandler($views, $appConfig['debug'], $root . '/storage/logs/app.log');
     $errors->register();
 
+    /** @var array{host: string, port: int, database: string, username: string,
+     *     password: string, charset: string, options: array<int, mixed>} $databaseConfig */
+    $databaseConfig = require $root . '/config/database.php';
+
     $home = new HomeController($views, new InMemoryServiceCatalog());
+    $services = static function () use ($databaseConfig, $views): Response {
+        $repository = new ServiceRepository((new PdoConnectionFactory($databaseConfig))->create());
+
+        return (new ServicesController($views, $repository))->index();
+    };
     $router = new Router(
         static fn (): Response => new Response(
             $views->render('errors/404', ['title' => 'Page not found']),
@@ -43,9 +55,9 @@ try {
         )
     );
 
-    /** @var callable(Router, HomeController): void $registerRoutes */
+    /** @var callable(Router, HomeController, callable(): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
-    $registerRoutes($router, $home);
+    $registerRoutes($router, $home, $services);
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $uri = $_SERVER['REQUEST_URI'] ?? '/';

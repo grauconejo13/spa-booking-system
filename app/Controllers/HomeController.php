@@ -24,12 +24,4 @@ final class HomeController extends Controller
             'featuredServices' => array_slice($this->services->all(), 0, 2),
         ]);
     }
-
-    public function services(): Response
-    {
-        return $this->render('services', [
-            'title' => 'Spa services',
-            'services' => $this->services->all(),
-        ]);
-    }
 }

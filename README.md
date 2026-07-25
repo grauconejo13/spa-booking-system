@@ -15,8 +15,8 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 - Responsive, accessible server-rendered pages with light JavaScript enhancement
 
 Phases 1 and 2 provide the framework-free HTTP foundation, therapist-aware MySQL schema, fictional demo
-data, and focused PDO repositories. The public services page remains temporarily in-memory until the
-customer catalogue is connected in Phase 3.
+data, and focused PDO repositories. Phase 3 now loads the public services catalogue from MySQL; service
+details and the booking flow remain planned.
 
 ## Technology stack
 
@@ -41,8 +41,8 @@ cp .env.example .env
 ```
 
 Edit `.env` with local database settings. The application uses a small local environment loader and
-constructor-based wiring rather than an application container. Public Phase 2 pages still do not open a
-database connection; repositories create one only when a persistence-backed use case needs it.
+constructor-based wiring rather than an application container. The public services page opens a database
+connection through the PDO factory and reads active services through the service repository.
 
 Start PHP's development server with the public directory as the document root:
 
