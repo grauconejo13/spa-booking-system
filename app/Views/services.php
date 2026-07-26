@@ -40,6 +40,9 @@ and therapist selection arrive in a later phase.</p>
                             <dd>$<?= number_format($service->priceCents / 100, 2) ?></dd>
                         </div>
                     </dl>
+                    <a class="service-link" href="/services/<?= $service->id ?>">
+                        View service details
+                    </a>
                 </article>
             <?php endforeach; ?>
             </div>

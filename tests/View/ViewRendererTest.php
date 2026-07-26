@@ -7,6 +7,7 @@ namespace SpaBooking\Tests\View;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SpaBooking\Models\Service;
+use SpaBooking\Models\Therapist;
 use SpaBooking\View\ViewRenderer;
 
 final class ViewRendererTest extends TestCase
@@ -57,5 +58,24 @@ final class ViewRendererTest extends TestCase
         self::assertStringNotContainsString('<script>Forest Facial</script>', $html);
         self::assertStringContainsString('50 minutes', $html);
         self::assertStringContainsString('$86.50', $html);
+    }
+
+    public function testServiceDetailEscapesServiceAndTherapistValues(): void
+    {
+        $service = new Service(1, '<script>Facial</script>', 'facial', '<img src=x>', 50, 8650, true, 1);
+        $therapist = new Therapist(1, '<b>Mara</b>', 'mara', '<svg onload=alert(1)>', true, 1);
+
+        $html = $this->renderer->render('service-detail', [
+            'title' => $service->name,
+            'service' => $service,
+            'therapists' => [$therapist],
+            'detailError' => false,
+        ]);
+
+        self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);
+        self::assertStringContainsString('&lt;img src=x&gt;', $html);
+        self::assertStringContainsString('&lt;b&gt;Mara&lt;/b&gt;', $html);
+        self::assertStringContainsString('&lt;svg onload=alert(1)&gt;', $html);
+        self::assertStringNotContainsString('<svg onload=alert(1)>', $html);
     }
 }

@@ -3,7 +3,8 @@
 ## Customer books an appointment
 
 1. Visitor opens the service catalogue.
-2. Visitor selects an active service and views its duration and price.
+2. Visitor follows `/services/{id}` to view the active service's description, duration, price, and
+   currently active qualified therapists.
 3. Visitor selects a qualified therapist or chooses "any available therapist."
 4. Visitor chooses a future date.
 5. Server calculates valid times from qualified therapists, each therapist's availability, service duration, interval, and that therapist's blocking appointments.

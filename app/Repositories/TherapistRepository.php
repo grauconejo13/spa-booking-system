@@ -8,7 +8,7 @@ use PDO;
 use SpaBooking\Models\Therapist;
 use SpaBooking\Models\TherapistAvailability;
 
-final class TherapistRepository
+final class TherapistRepository implements TherapistCatalogRepository
 {
     public function __construct(private readonly PDO $pdo)
     {

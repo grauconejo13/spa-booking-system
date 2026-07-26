@@ -30,6 +30,17 @@ final class RouterTest extends TestCase
         self::assertSame('services', $router->dispatch('GET', '/services/')->body());
     }
 
+    public function testItMatchesAServiceIdRouteAndPassesTheParameter(): void
+    {
+        $router = new Router();
+        $router->get('/services/{id}', static fn (string $id): Response => new Response('service-' . $id));
+
+        $response = $router->dispatch('GET', '/services/42');
+
+        self::assertSame(200, $response->status());
+        self::assertSame('service-42', $response->body());
+    }
+
     public function testUnknownPathsAndMethodsUseTheNotFoundResponse(): void
     {
         $router = new Router(static fn (): Response => new Response('missing', 404));

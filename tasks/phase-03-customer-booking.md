@@ -7,7 +7,7 @@ Allow a visitor to browse services and create one valid, therapist-assigned, con
 ## Tasks
 
 - [x] Load and render the active service catalogue from MySQL with empty and failure states.
-- [ ] Build the service detail view.
+- [x] Build the service detail view with active qualified therapists.
 - [ ] Present qualified therapists and an "any available therapist" choice.
 - [ ] Implement per-therapist availability and time-slot calculation in a testable service.
 - [ ] Build booking details, review, submit, and confirmation screens.

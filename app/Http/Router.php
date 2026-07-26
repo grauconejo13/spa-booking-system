@@ -9,8 +9,14 @@ use RuntimeException;
 
 final class Router
 {
-    /** @var array<string, array<string, Closure(): Response>> */
+    /** @var array<string, array<string, Closure(string ...$parameters): Response>> */
     private array $routes = [];
+
+    /** @var array<string, list<array{pattern: string, handler: Closure(string ...$parameters): Response}>> */
+    private array $parameterizedRoutes = [];
+
+    /** @var array<string, array<string, true>> */
+    private array $registeredRoutes = [];
 
     /** @var Closure(): Response */
     private Closure $notFoundHandler;
@@ -35,20 +41,49 @@ final class Router
         $method = strtoupper($method);
         $path = $this->normalizePath($path);
 
-        if (isset($this->routes[$method][$path])) {
+        if (isset($this->registeredRoutes[$method][$path])) {
             throw new RuntimeException(sprintf('Duplicate route: %s %s', $method, $path));
         }
 
-        $this->routes[$method][$path] = Closure::fromCallable($handler);
+        $this->registeredRoutes[$method][$path] = true;
+        $routeHandler = Closure::fromCallable($handler);
+
+        if (preg_match('/\{[A-Za-z_][A-Za-z0-9_]*\}/', $path) === 1) {
+            $pattern = preg_replace('/\\\{[A-Za-z_][A-Za-z0-9_]*\\\}/', '([^/]+)', preg_quote($path, '#'));
+            assert(is_string($pattern));
+            $this->parameterizedRoutes[$method][] = [
+                'pattern' => '#^' . $pattern . '$#',
+                'handler' => $routeHandler,
+            ];
+
+            return;
+        }
+
+        $this->routes[$method][$path] = $routeHandler;
     }
 
     public function dispatch(string $method, string $uri): Response
     {
         $path = parse_url($uri, PHP_URL_PATH);
         $path = is_string($path) ? $this->normalizePath($path) : '/';
-        $handler = $this->routes[strtoupper($method)][$path] ?? $this->notFoundHandler;
+        $method = strtoupper($method);
+        $handler = $this->routes[$method][$path] ?? null;
 
-        return $handler();
+        if ($handler !== null) {
+            return $handler();
+        }
+
+        foreach ($this->parameterizedRoutes[$method] ?? [] as $route) {
+            if (preg_match($route['pattern'], $path, $matches) !== 1) {
+                continue;
+            }
+
+            array_shift($matches);
+
+            return $route['handler'](...$matches);
+        }
+
+        return ($this->notFoundHandler)();
     }
 
     private function normalizePath(string $path): string

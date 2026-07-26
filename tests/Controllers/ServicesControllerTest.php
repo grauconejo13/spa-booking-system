@@ -48,6 +48,11 @@ final class ServicesControllerTest extends TestCase
             {
                 throw new RuntimeException('SQLSTATE password=secret internal-host');
             }
+
+            public function findActiveById(int $id): ?Service
+            {
+                throw new RuntimeException('SQLSTATE password=secret internal-host');
+            }
         };
 
         $response = (new ServicesController($this->views, $repository))->index();
@@ -71,6 +76,17 @@ final class ServicesControllerTest extends TestCase
             public function findActive(): array
             {
                 return $this->services;
+            }
+
+            public function findActiveById(int $id): ?Service
+            {
+                foreach ($this->services as $service) {
+                    if ($service->id === $id && $service->isActive) {
+                        return $service;
+                    }
+                }
+
+                return null;
             }
         };
     }

@@ -10,4 +10,6 @@ interface ServiceCatalogRepository
 {
     /** @return list<Service> */
     public function findActive(): array;
+
+    public function findActiveById(int $id): ?Service;
 }

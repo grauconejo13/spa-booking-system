@@ -47,7 +47,7 @@ Dependencies point inward from HTTP and persistence concerns toward application/
 
 ## Routing and rendering
 
-Routes are declared explicitly in `routes/web.php`, grouped conceptually into public and future admin routes. Route declarations remain readable and contain no business logic. PHP templates are chosen over a template engine to keep dependencies and learning surface small.
+Routes are declared explicitly in `routes/web.php`, grouped conceptually into public and future admin routes. The router supports named single-segment parameters such as `/services/{id}` and passes matched values to controller callables. Route declarations remain readable and contain no business logic. PHP templates are chosen over a template engine to keep dependencies and learning surface small.
 
 ## Error handling and logging
 

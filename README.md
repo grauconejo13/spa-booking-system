@@ -15,8 +15,8 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 - Responsive, accessible server-rendered pages with light JavaScript enhancement
 
 Phases 1 and 2 provide the framework-free HTTP foundation, therapist-aware MySQL schema, fictional demo
-data, and focused PDO repositories. Phase 3 now loads the public services catalogue from MySQL; service
-details and the booking flow remain planned.
+data, and focused PDO repositories. Phase 3 now loads the public services catalogue and service details,
+including qualified therapists, from MySQL; the booking flow remains planned.
 
 ## Technology stack
 
@@ -50,7 +50,8 @@ Start PHP's development server with the public directory as the document root:
 php -S localhost:8000 -t public public/router.php
 ```
 
-Then visit `http://localhost:8000`; the services page is available at `http://localhost:8000/services`.
+Then visit `http://localhost:8000`; the services page is available at `http://localhost:8000/services`,
+with individual active services linked at `/services/{id}`.
 
 ## Database setup
 

@@ -41,6 +41,19 @@ final class ServiceRepository implements ServiceCatalogRepository
         return is_array($row) ? $this->map($row) : null;
     }
 
+    public function findActiveById(int $id): ?Service
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT id, name, slug, description, duration_minutes, price_cents, is_active, display_order
+             FROM services WHERE id = :id AND is_active = 1 LIMIT 1'
+        );
+        assert($statement !== false);
+        $statement->execute(['id' => $id]);
+        $row = $statement->fetch();
+
+        return is_array($row) ? $this->map($row) : null;
+    }
+
     /** @param array<string, mixed> $row */
     private function map(array $row): Service
     {

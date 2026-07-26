@@ -10,6 +10,7 @@ use SpaBooking\Http\ErrorHandler;
 use SpaBooking\Http\Response;
 use SpaBooking\Http\Router;
 use SpaBooking\Repositories\ServiceRepository;
+use SpaBooking\Repositories\TherapistRepository;
 use SpaBooking\Services\InMemoryServiceCatalog;
 use SpaBooking\View\ViewRenderer;
 
@@ -48,6 +49,15 @@ try {
 
         return (new ServicesController($views, $repository))->index();
     };
+    $serviceDetail = static function (string $id) use ($databaseConfig, $views): Response {
+        $pdo = (new PdoConnectionFactory($databaseConfig))->create();
+
+        return (new ServicesController(
+            $views,
+            new ServiceRepository($pdo),
+            new TherapistRepository($pdo)
+        ))->show($id);
+    };
     $router = new Router(
         static fn (): Response => new Response(
             $views->render('errors/404', ['title' => 'Page not found']),
@@ -55,9 +65,9 @@ try {
         )
     );
 
-    /** @var callable(Router, HomeController, callable(): Response): void $registerRoutes */
+    /** @var callable(Router, HomeController, callable(): Response, callable(string): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
-    $registerRoutes($router, $home, $services);
+    $registerRoutes($router, $home, $services, $serviceDetail);
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $uri = $_SERVER['REQUEST_URI'] ?? '/';

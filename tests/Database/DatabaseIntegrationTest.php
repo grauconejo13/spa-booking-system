@@ -100,10 +100,12 @@ final class DatabaseIntegrationTest extends TestCase
     {
         self::assertNotNull(self::$pdo);
         $services = (new ServiceRepository(self::$pdo))->findActive();
+        $service = (new ServiceRepository(self::$pdo))->findActiveById(1);
         $therapists = (new TherapistRepository(self::$pdo))->findActiveQualifiedForService(1);
         $availability = (new TherapistRepository(self::$pdo))->findAvailability(1, 1);
 
         self::assertSame('stillwater-massage', $services[0]->slug);
+        self::assertSame('stillwater-massage', $service?->slug);
         self::assertSame(['mara-vale', 'theo-linden'], array_column($therapists, 'slug'));
         self::assertSame('09:00:00', $availability[0]->startsAt);
     }
