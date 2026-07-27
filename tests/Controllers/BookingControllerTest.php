@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace SpaBooking\Tests\Controllers;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SpaBooking\Controllers\BookingController;
 use SpaBooking\Models\Service;
 use SpaBooking\Models\Therapist;
 use SpaBooking\Repositories\ServiceCatalogRepository;
+use SpaBooking\Repositories\AppointmentScheduleRepository;
+use SpaBooking\Repositories\AvailabilityRepository;
 use SpaBooking\Repositories\TherapistCatalogRepository;
+use SpaBooking\Services\AvailabilityService;
 use SpaBooking\View\ViewRenderer;
 
 final class BookingControllerTest extends TestCase
@@ -32,7 +37,7 @@ final class BookingControllerTest extends TestCase
         self::assertStringContainsString('50 minutes', $response->body());
         self::assertStringContainsString('$86.50', $response->body());
         self::assertStringContainsString('Back to service details', $response->body());
-        self::assertStringContainsString('Date selection and available appointment times', $response->body());
+        self::assertStringContainsString('Choose a valid date to preview', $response->body());
         self::assertStringContainsString('disabled>Continue', $response->body());
     }
 
@@ -52,6 +57,28 @@ final class BookingControllerTest extends TestCase
 
         self::assertSame(200, $response->status());
         self::assertStringContainsString('No therapists are currently assigned', $response->body());
+    }
+
+    public function testItAcceptsAValidDateAndPreservesTherapistSelection(): void
+    {
+        $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'therapist' => '3',
+            'date' => '2030-06-03',
+        ]);
+
+        self::assertSame(200, $response->status());
+        self::assertStringContainsString('value="2030-06-03"', $response->body());
+        self::assertMatchesRegularExpression('/value="3"\s+checked/', $response->body());
+        self::assertStringContainsString('No appointment times are available', $response->body());
+    }
+
+    public function testItRejectsInvalidAndPastDates(): void
+    {
+        $invalid = $this->controller($this->service(), [$this->therapist()])->start('7', ['date' => '06/03/2030']);
+        $past = $this->controller($this->service(), [$this->therapist()])->start('7', ['date' => '2030-05-31']);
+
+        self::assertStringContainsString('Choose a valid date in YYYY-MM-DD format.', $invalid->body());
+        self::assertStringContainsString('Choose today or a future date.', $past->body());
     }
 
     public function testItReturnsNotFoundForAnInvalidServiceId(): void
@@ -87,7 +114,12 @@ final class BookingControllerTest extends TestCase
         $response = (new BookingController(
             $this->views,
             $services,
-            $this->therapistRepository([])
+            $this->therapistRepository([]),
+            $this->availabilityRepository(),
+            $this->appointmentRepository(),
+            new AvailabilityService(),
+            new DateTimeZone('America/Chicago'),
+            new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         ))->start('7');
 
         self::assertSame(503, $response->status());
@@ -116,7 +148,16 @@ final class BookingControllerTest extends TestCase
             }
         };
 
-        return new BookingController($this->views, $services, $this->therapistRepository($therapists));
+        return new BookingController(
+            $this->views,
+            $services,
+            $this->therapistRepository($therapists),
+            $this->availabilityRepository(),
+            $this->appointmentRepository(),
+            new AvailabilityService(),
+            new DateTimeZone('America/Chicago'),
+            new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
+        );
     }
 
     /** @param list<Therapist> $therapists */
@@ -131,6 +172,34 @@ final class BookingControllerTest extends TestCase
             public function findActiveQualifiedForService(int $serviceId): array
             {
                 return $this->therapists;
+            }
+        };
+    }
+
+    private function availabilityRepository(): AvailabilityRepository
+    {
+        return new class implements AvailabilityRepository {
+            public function findAvailability(int $therapistId, int $dayOfWeek): array
+            {
+                return [];
+            }
+
+            public function findAvailabilityExceptions(int $therapistId, string $date): array
+            {
+                return [];
+            }
+        };
+    }
+
+    private function appointmentRepository(): AppointmentScheduleRepository
+    {
+        return new class implements AppointmentScheduleRepository {
+            public function findOverlappingAppointments(
+                int $therapistId,
+                DateTimeImmutable $startsAt,
+                DateTimeImmutable $endsAt
+            ): array {
+                return [];
             }
         };
     }

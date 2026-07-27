@@ -112,6 +112,15 @@ Routes are declared explicitly in `routes/web.php`, grouped conceptually into pu
 
 **Rationale:** Each query has domain-specific selection and mapping behavior. There is no current alternate implementation that would justify interfaces; tests exercise the concrete persistence boundary against an explicitly configured disposable MySQL database.
 
+### ADR-010: Deterministic availability previews
+
+**Decision:** Generate candidate starts at 30-minute intervals in the configured spa timezone. A
+date exception replaces recurring windows for that therapist and date. Compare slots with appointment
+intervals in UTC, and merge identical "any therapist" starts while retaining all candidate therapist IDs.
+
+**Rationale:** Pure calculation remains deterministic and unit-testable, while repositories stay focused
+on loading schedule inputs. Previewing candidates does not reserve or assign a therapist.
+
 ## Deferred decisions
 
 - Whether CSS growth justifies an SCSS build step

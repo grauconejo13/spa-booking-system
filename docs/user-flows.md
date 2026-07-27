@@ -5,10 +5,12 @@
 1. Visitor opens the service catalogue.
 2. Visitor follows `/services/{id}` to view the active service's description, duration, price, and
    currently active qualified therapists.
-3. Visitor follows `/book/{serviceId}` and selects a qualified therapist preference or chooses
-   "any available therapist." Date and time selection remain unavailable until the next booking step.
-4. Visitor chooses a future date once availability selection is implemented.
-5. Server calculates valid times from qualified therapists, each therapist's availability, service duration, interval, and that therapist's blocking appointments.
+3. Visitor follows `/book/{serviceId}`, selects a qualified therapist preference or chooses
+   "any available therapist," and chooses a non-past date.
+4. Server previews 30-minute-interval start times using recurring hours, date exceptions, service
+   duration, and pending or confirmed appointments. "Any" results merge identical starts without
+   assigning a therapist.
+5. Visitor reviews the available time preview; choosing and submitting a time remains a later step.
 6. Visitor selects a time and enters name, email, optional phone, and optional note.
 7. Visitor reviews the request and submits a CSRF-protected form.
 8. Server normalizes and validates all fields, reloads the service and therapist choice, and rechecks availability.

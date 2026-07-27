@@ -9,7 +9,7 @@ Allow a visitor to browse services and create one valid, therapist-assigned, con
 - [x] Load and render the active service catalogue from MySQL with empty and failure states.
 - [x] Build the service detail view with active qualified therapists.
 - [x] Add a read-only booking entry page with qualified therapist and "any available therapist" choices.
-- [ ] Implement per-therapist availability and time-slot calculation in a testable service.
+- [x] Implement exception-aware per-therapist availability and 30-minute time-slot previews.
 - [ ] Build booking details, review, submit, and confirmation screens.
 - [ ] Validate service, date, time, name, email, phone, and note on the server.
 - [ ] Add session-backed CSRF protection and safe form repopulation.

@@ -91,6 +91,10 @@ final class DatabaseIntegrationTest extends TestCase
         self::assertSame(3, (int) self::$pdo->query('SELECT COUNT(*) FROM therapists')->fetchColumn());
         self::assertSame(6, (int) self::$pdo->query('SELECT COUNT(*) FROM therapist_services')->fetchColumn());
         self::assertSame(15, (int) self::$pdo->query('SELECT COUNT(*) FROM therapist_availability')->fetchColumn());
+        self::assertSame(
+            0,
+            (int) self::$pdo->query('SELECT COUNT(*) FROM therapist_availability_exceptions')->fetchColumn()
+        );
         self::assertSame(2, (int) self::$pdo->query('SELECT COUNT(*) FROM appointments')->fetchColumn());
         self::assertSame(1, (int) self::$pdo->query('SELECT COUNT(*) FROM admin_users')->fetchColumn());
         self::assertSame([], self::$migrations?->migrate());
@@ -119,6 +123,7 @@ final class DatabaseIntegrationTest extends TestCase
 
         self::assertNotNull($appointment);
         self::assertSame('Stillwater Massage', $appointment->serviceName);
+        self::assertSame('UTC', $appointment->startsAt->getTimezone()->getName());
         self::assertTrue($appointments->hasBlockingOverlap(
             1,
             new DateTimeImmutable('2030-06-03 15:30:00'),

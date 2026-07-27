@@ -7,8 +7,9 @@ namespace SpaBooking\Repositories;
 use PDO;
 use SpaBooking\Models\Therapist;
 use SpaBooking\Models\TherapistAvailability;
+use SpaBooking\Models\TherapistAvailabilityException;
 
-final class TherapistRepository implements TherapistCatalogRepository
+final class TherapistRepository implements TherapistCatalogRepository, AvailabilityRepository
 {
     public function __construct(private readonly PDO $pdo)
     {
@@ -53,6 +54,32 @@ final class TherapistRepository implements TherapistCatalogRepository
                 (int) $row['day_of_week'],
                 (string) $row['starts_at'],
                 (string) $row['ends_at']
+            ),
+            $rows
+        );
+    }
+
+    public function findAvailabilityExceptions(int $therapistId, string $date): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT id, therapist_id, exception_date, is_available, starts_at, ends_at
+             FROM therapist_availability_exceptions
+             WHERE therapist_id = :therapist_id AND exception_date = :exception_date
+             ORDER BY starts_at, id'
+        );
+        assert($statement !== false);
+        $statement->execute(['therapist_id' => $therapistId, 'exception_date' => $date]);
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $statement->fetchAll();
+
+        return array_map(
+            static fn (array $row): TherapistAvailabilityException => new TherapistAvailabilityException(
+                (int) $row['id'],
+                (int) $row['therapist_id'],
+                (string) $row['exception_date'],
+                (bool) $row['is_available'],
+                isset($row['starts_at']) ? (string) $row['starts_at'] : null,
+                isset($row['ends_at']) ? (string) $row['ends_at'] : null
             ),
             $rows
         );

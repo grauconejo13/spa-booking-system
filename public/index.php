@@ -10,9 +10,11 @@ use SpaBooking\Database\PdoConnectionFactory;
 use SpaBooking\Http\ErrorHandler;
 use SpaBooking\Http\Response;
 use SpaBooking\Http\Router;
+use SpaBooking\Repositories\AppointmentRepository;
 use SpaBooking\Repositories\ServiceRepository;
 use SpaBooking\Repositories\TherapistRepository;
 use SpaBooking\Services\InMemoryServiceCatalog;
+use SpaBooking\Services\AvailabilityService;
 use SpaBooking\View\ViewRenderer;
 
 $root = dirname(__DIR__);
@@ -59,14 +61,19 @@ try {
             new TherapistRepository($pdo)
         ))->show($id);
     };
-    $bookingEntry = static function (string $serviceId) use ($databaseConfig, $views): Response {
+    $bookingEntry = static function (string $serviceId) use ($appConfig, $databaseConfig, $views): Response {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
+        $therapists = new TherapistRepository($pdo);
 
         return (new BookingController(
             $views,
             new ServiceRepository($pdo),
-            new TherapistRepository($pdo)
-        ))->start($serviceId);
+            $therapists,
+            $therapists,
+            new AppointmentRepository($pdo),
+            new AvailabilityService(),
+            new DateTimeZone($appConfig['timezone'])
+        ))->start($serviceId, $_GET);
     };
     $router = new Router(
         static fn (): Response => new Response(

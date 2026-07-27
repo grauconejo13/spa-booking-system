@@ -64,7 +64,23 @@ Primary key: (`therapist_id`, `service_id`). This join table records qualificati
 | `created_at` | `DATETIME` | UTC |
 | `updated_at` | `DATETIME` | UTC |
 
-Indexes: (`therapist_id`, `day_of_week`, `starts_at`, `ends_at`). Initial scope supports recurring weekly windows only; date exceptions and time off are deferred until a demonstrated need.
+Indexes: (`therapist_id`, `day_of_week`, `starts_at`, `ends_at`).
+
+### `therapist_availability_exceptions`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `BIGINT UNSIGNED` | Primary key, auto increment |
+| `therapist_id` | `BIGINT UNSIGNED` | Foreign key to `therapists` |
+| `exception_date` | `DATE` | Date interpreted in the configured spa timezone |
+| `is_available` | `BOOLEAN` | False closes the full date; true defines an override window |
+| `starts_at` | `TIME` | Required for available overrides; otherwise null |
+| `ends_at` | `TIME` | Required for available overrides; otherwise null |
+| `created_at` | `DATETIME` | UTC |
+| `updated_at` | `DATETIME` | UTC |
+
+Date exceptions replace recurring windows for that therapist and date. Multiple available rows may
+define split override windows; a closed-date row has no start or end time.
 
 ### `appointments`
 

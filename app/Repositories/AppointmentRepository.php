@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace SpaBooking\Repositories;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use PDO;
 use SpaBooking\Models\Appointment;
+use SpaBooking\Models\AppointmentInterval;
 
-final class AppointmentRepository
+final class AppointmentRepository implements AppointmentScheduleRepository
 {
     public function __construct(private readonly PDO $pdo)
     {
@@ -64,9 +66,38 @@ final class AppointmentRepository
             (string) $row['customer_email'],
             isset($row['customer_phone']) ? (string) $row['customer_phone'] : null,
             isset($row['customer_note']) ? (string) $row['customer_note'] : null,
-            new DateTimeImmutable((string) $row['starts_at']),
-            new DateTimeImmutable((string) $row['ends_at']),
+            new DateTimeImmutable((string) $row['starts_at'], new DateTimeZone('UTC')),
+            new DateTimeImmutable((string) $row['ends_at'], new DateTimeZone('UTC')),
             (string) $row['status']
+        );
+    }
+
+    public function findOverlappingAppointments(
+        int $therapistId,
+        DateTimeImmutable $startsAt,
+        DateTimeImmutable $endsAt
+    ): array {
+        $statement = $this->pdo->prepare(
+            'SELECT starts_at, ends_at, status FROM appointments
+             WHERE therapist_id = :therapist_id AND starts_at < :ends_at AND ends_at > :starts_at
+             ORDER BY starts_at, id'
+        );
+        assert($statement !== false);
+        $statement->execute([
+            'therapist_id' => $therapistId,
+            'starts_at' => $startsAt->format('Y-m-d H:i:s'),
+            'ends_at' => $endsAt->format('Y-m-d H:i:s'),
+        ]);
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $statement->fetchAll();
+
+        return array_map(
+            static fn (array $row): AppointmentInterval => new AppointmentInterval(
+                new DateTimeImmutable((string) $row['starts_at'], new DateTimeZone('UTC')),
+                new DateTimeImmutable((string) $row['ends_at'], new DateTimeZone('UTC')),
+                (string) $row['status']
+            ),
+            $rows
         );
     }
 }
