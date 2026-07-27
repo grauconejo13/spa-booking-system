@@ -59,8 +59,11 @@ final class BookingController extends Controller
             }
 
             $selectedDate = is_string($query['date'] ?? null) ? $query['date'] : '';
+            $selectedTime = is_string($query['time'] ?? null) ? $query['time'] : '';
             $date = $this->parseDate($selectedDate);
             $dateError = null;
+            $timeError = null;
+            $selectedSlot = null;
             $slots = [];
 
             if ($selectedDate !== '' && $date === null) {
@@ -105,6 +108,23 @@ final class BookingController extends Controller
                     $blocking
                 );
             }
+
+            if ($selectedTime !== '') {
+                if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $selectedTime) !== 1) {
+                    $timeError = 'Choose a valid time in HH:MM format.';
+                } else {
+                    foreach ($slots as $slot) {
+                        if ($slot->startsAt->format('H:i') === $selectedTime) {
+                            $selectedSlot = $slot;
+                            break;
+                        }
+                    }
+
+                    if ($selectedSlot === null) {
+                        $timeError = 'That time is not currently available. Choose one of the listed times.';
+                    }
+                }
+            }
         } catch (Throwable) {
             return $this->render('booking-entry', [
                 'title' => 'Booking unavailable',
@@ -115,6 +135,9 @@ final class BookingController extends Controller
                 'selectedDate' => '',
                 'dateError' => null,
                 'slots' => [],
+                'selectedTime' => '',
+                'timeError' => null,
+                'selectedSlot' => null,
             ], 503);
         }
 
@@ -127,6 +150,9 @@ final class BookingController extends Controller
             'selectedDate' => $selectedDate,
             'dateError' => $dateError,
             'slots' => $slots,
+            'selectedTime' => $selectedTime,
+            'timeError' => $timeError,
+            'selectedSlot' => $selectedSlot,
         ]);
     }
 

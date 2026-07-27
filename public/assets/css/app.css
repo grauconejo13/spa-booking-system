@@ -356,21 +356,77 @@ h2 {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    padding: 0;
+    border: 0;
 }
 
 .time-slot {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     padding: 0.45rem 0.7rem;
     border: 1px solid var(--forest);
     border-radius: 999px;
     background: white;
     color: var(--forest-dark);
     font-weight: 750;
+    cursor: pointer;
+}
+
+.time-slot:has(input:checked) {
+    background: var(--forest);
+    color: white;
+}
+
+.time-slot input {
+    accent-color: var(--forest);
 }
 
 .slot-note {
     margin-top: 1rem;
     color: var(--muted);
     font-size: 0.9rem;
+}
+
+.customer-details-section {
+    border-top: 1px solid var(--line);
+    background: var(--cream);
+}
+
+.customer-details-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.form-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.form-field label {
+    font-weight: 750;
+}
+
+.form-field label span,
+.form-field small {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.form-field input,
+.form-field textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.35rem;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+}
+
+.form-field textarea {
+    min-height: 8rem;
+    resize: vertical;
 }
 
 .catalog-message {

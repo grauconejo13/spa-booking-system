@@ -11,6 +11,7 @@ use RuntimeException;
 use SpaBooking\Controllers\BookingController;
 use SpaBooking\Models\Service;
 use SpaBooking\Models\Therapist;
+use SpaBooking\Models\TherapistAvailability;
 use SpaBooking\Repositories\ServiceCatalogRepository;
 use SpaBooking\Repositories\AppointmentScheduleRepository;
 use SpaBooking\Repositories\AvailabilityRepository;
@@ -38,7 +39,7 @@ final class BookingControllerTest extends TestCase
         self::assertStringContainsString('$86.50', $response->body());
         self::assertStringContainsString('Back to service details', $response->body());
         self::assertStringContainsString('Choose a valid date to preview', $response->body());
-        self::assertStringContainsString('disabled>Continue', $response->body());
+        self::assertStringNotContainsString('Tell us how to reach you', $response->body());
     }
 
     public function testItOffersAnyAndSpecificQualifiedTherapistChoices(): void
@@ -69,7 +70,63 @@ final class BookingControllerTest extends TestCase
         self::assertSame(200, $response->status());
         self::assertStringContainsString('value="2030-06-03"', $response->body());
         self::assertMatchesRegularExpression('/value="3"\s+checked/', $response->body());
-        self::assertStringContainsString('No appointment times are available', $response->body());
+        self::assertStringContainsString('name="time"', $response->body());
+    }
+
+    public function testItRendersSelectableSlotsAndPreservesAValidSelectedTime(): void
+    {
+        $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'therapist' => '3',
+            'date' => '2030-06-03',
+            'time' => '09:30',
+        ]);
+
+        self::assertSame(200, $response->status());
+        self::assertMatchesRegularExpression('/name="time" value="09:30"\s+checked/', $response->body());
+        self::assertStringContainsString('Tell us how to reach you', $response->body());
+        self::assertStringContainsString('This appointment has not been submitted or reserved.', $response->body());
+    }
+
+    public function testItRejectsMalformedAndUnavailableTimesWithoutShowingCustomerDetails(): void
+    {
+        $controller = $this->controller($this->service(), [$this->therapist()]);
+        $query = ['therapist' => '3', 'date' => '2030-06-03'];
+        $malformed = $controller->start('7', $query + ['time' => '9:30']);
+        $unavailable = $controller->start('7', $query + ['time' => '17:00']);
+
+        self::assertStringContainsString('Choose a valid time in HH:MM format.', $malformed->body());
+        self::assertStringContainsString('That time is not currently available.', $unavailable->body());
+        self::assertStringNotContainsString('Tell us how to reach you', $malformed->body());
+        self::assertStringNotContainsString('Tell us how to reach you', $unavailable->body());
+    }
+
+    public function testAnyTherapistSelectionRetainsEveryCandidateForTheChosenSlot(): void
+    {
+        $second = new Therapist(4, 'Theo Linden', 'theo-linden', 'Massage specialist.', true, 2);
+        $response = $this->controller($this->service(), [$this->therapist(), $second])->start('7', [
+            'therapist' => 'any',
+            'date' => '2030-06-03',
+            'time' => '09:00',
+        ]);
+
+        self::assertStringContainsString('data-therapist-ids="3,4"', $response->body());
+        self::assertStringContainsString('Tell us how to reach you', $response->body());
+    }
+
+    public function testCustomerDetailsUseAccessibleLabelsAndClientValidationHints(): void
+    {
+        $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'date' => '2030-06-03',
+            'time' => '09:00',
+        ]);
+
+        self::assertStringContainsString('for="customer-name"', $response->body());
+        self::assertStringContainsString('name="name" type="text" required', $response->body());
+        self::assertStringContainsString('name="email" type="email" required', $response->body());
+        self::assertStringContainsString('name="phone" type="tel" required', $response->body());
+        self::assertStringContainsString('name="notes"', $response->body());
+        self::assertStringContainsString('maxlength="1000"', $response->body());
+        self::assertStringContainsString('Review booking coming next', $response->body());
     }
 
     public function testItRejectsInvalidAndPastDates(): void
@@ -181,7 +238,7 @@ final class BookingControllerTest extends TestCase
         return new class implements AvailabilityRepository {
             public function findAvailability(int $therapistId, int $dayOfWeek): array
             {
-                return [];
+                return [new TherapistAvailability(1, $therapistId, $dayOfWeek, '09:00', '11:00')];
             }
 
             public function findAvailabilityExceptions(int $therapistId, string $date): array

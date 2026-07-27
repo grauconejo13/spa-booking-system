@@ -93,6 +93,9 @@ final class ViewRendererTest extends TestCase
             'selectedDate' => '',
             'dateError' => null,
             'slots' => [],
+            'selectedTime' => '',
+            'timeError' => null,
+            'selectedSlot' => null,
         ]);
 
         self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);

@@ -10,7 +10,8 @@ Allow a visitor to browse services and create one valid, therapist-assigned, con
 - [x] Build the service detail view with active qualified therapists.
 - [x] Add a read-only booking entry page with qualified therapist and "any available therapist" choices.
 - [x] Implement exception-aware per-therapist availability and 30-minute time-slot previews.
-- [ ] Build booking details, review, submit, and confirmation screens.
+- [x] Add query-backed time selection and a non-submitting customer-details form shell.
+- [ ] Build booking review, submission, and confirmation screens.
 - [ ] Validate service, date, time, name, email, phone, and note on the server.
 - [ ] Add session-backed CSRF protection and safe form repopulation.
 - [ ] Generate unpredictable public appointment references.

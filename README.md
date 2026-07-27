@@ -17,7 +17,8 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 Phases 1 and 2 provide the framework-free HTTP foundation, therapist-aware MySQL schema, fictional demo
 data, and focused PDO repositories. Phase 3 now loads the public services catalogue and service details,
 including qualified therapists, from MySQL. A read-only booking entry presents therapist preferences;
-date and time-slot previews are available, while appointment submission remains planned.
+date and time-slot selection plus a customer-details form shell are available, while review and
+appointment submission remain planned.
 
 ## Technology stack
 

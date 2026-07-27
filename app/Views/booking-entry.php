@@ -92,18 +92,75 @@ declare(strict_types=1);
                 <?php elseif ($slots === []) : ?>
                     <p>No appointment times are available on this date. Try another day.</p>
                 <?php else : ?>
-                    <div class="slot-list">
-                    <?php foreach ($slots as $slot) : ?>
-                        <span class="time-slot"
-                            data-therapist-ids="<?= implode(',', $slot->therapistIds) ?>">
-                            <?= $slot->startsAt->format('g:i A') ?>
-                        </span>
-                    <?php endforeach; ?>
-                    </div>
+                    <form method="get" action="/book/<?= $service->id ?>">
+                        <input type="hidden" name="therapist"
+                            value="<?= htmlspecialchars($selectedTherapist, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="date"
+                            value="<?= htmlspecialchars($selectedDate, ENT_QUOTES, 'UTF-8') ?>">
+                        <fieldset class="slot-list">
+                            <legend class="sr-only">Choose an available time</legend>
+                        <?php foreach ($slots as $slot) : ?>
+                            <?php $slotValue = $slot->startsAt->format('H:i'); ?>
+                            <label class="time-slot" data-therapist-ids="<?= implode(',', $slot->therapistIds) ?>">
+                                <input type="radio" name="time" value="<?= $slotValue ?>"
+                                    <?= $selectedTime === $slotValue ? 'checked' : '' ?>>
+                                <span><?= $slot->startsAt->format('g:i A') ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                        </fieldset>
+                        <?php if ($timeError !== null) : ?>
+                            <p class="field-error" role="alert">
+                                <?= htmlspecialchars($timeError, ENT_QUOTES, 'UTF-8') ?>
+                            </p>
+                        <?php endif; ?>
+                        <button class="button" type="submit">Select time</button>
+                    </form>
                     <p class="slot-note">Times are a preview. No therapist or appointment is reserved yet.</p>
                 <?php endif; ?>
-                <button class="button" type="button" disabled>Continue</button>
             </aside>
         </div>
     </section>
+
+    <?php if ($selectedSlot !== null) : ?>
+        <section class="section customer-details-section" aria-labelledby="customer-details-heading">
+            <div class="container narrow">
+                <p class="eyebrow">Contact details</p>
+                <h2 id="customer-details-heading">Tell us how to reach you</h2>
+                <p>
+                    Your selected time is <?= $selectedSlot->startsAt->format('g:i A') ?>.
+                    This appointment has not been submitted or reserved.
+                </p>
+                <form class="customer-details-form">
+                    <div class="form-field">
+                        <label for="customer-name">Full name</label>
+                        <input id="customer-name" name="name" type="text" required autocomplete="name"
+                            maxlength="<?= \SpaBooking\Validation\CustomerDetailsRules::NAME_MAX_LENGTH ?>">
+                        <small>Required.</small>
+                    </div>
+                    <div class="form-field">
+                        <label for="customer-email">Email address</label>
+                        <input id="customer-email" name="email" type="email" required autocomplete="email"
+                            maxlength="<?= \SpaBooking\Validation\CustomerDetailsRules::EMAIL_MAX_LENGTH ?>">
+                        <small>Required. Enter a valid email address.</small>
+                    </div>
+                    <div class="form-field">
+                        <label for="customer-phone">Phone number</label>
+                        <input id="customer-phone" name="phone" type="tel" required autocomplete="tel"
+                            maxlength="<?= \SpaBooking\Validation\CustomerDetailsRules::PHONE_MAX_LENGTH ?>">
+                        <small>Required.</small>
+                    </div>
+                    <div class="form-field">
+                        <label for="customer-notes">Notes <span>(optional)</span></label>
+                        <textarea id="customer-notes" name="notes"
+                            maxlength="<?= \SpaBooking\Validation\CustomerDetailsRules::NOTES_MAX_LENGTH ?>"></textarea>
+                        <small>
+                            Optional, up to
+                            <?= \SpaBooking\Validation\CustomerDetailsRules::NOTES_MAX_LENGTH ?> characters.
+                        </small>
+                    </div>
+                    <button class="button" type="button" disabled>Review booking coming next</button>
+                </form>
+            </div>
+        </section>
+    <?php endif; ?>
 <?php endif; ?>
