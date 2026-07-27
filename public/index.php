@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use SpaBooking\Config\Environment;
+use SpaBooking\Controllers\BookingController;
 use SpaBooking\Controllers\HomeController;
 use SpaBooking\Controllers\ServicesController;
 use SpaBooking\Database\PdoConnectionFactory;
@@ -58,6 +59,15 @@ try {
             new TherapistRepository($pdo)
         ))->show($id);
     };
+    $bookingEntry = static function (string $serviceId) use ($databaseConfig, $views): Response {
+        $pdo = (new PdoConnectionFactory($databaseConfig))->create();
+
+        return (new BookingController(
+            $views,
+            new ServiceRepository($pdo),
+            new TherapistRepository($pdo)
+        ))->start($serviceId);
+    };
     $router = new Router(
         static fn (): Response => new Response(
             $views->render('errors/404', ['title' => 'Page not found']),
@@ -65,9 +75,10 @@ try {
         )
     );
 
-    /** @var callable(Router, HomeController, callable(): Response, callable(string): Response): void $registerRoutes */
+    /** @var callable(Router, HomeController, callable(): Response, callable(string): Response,
+     *     callable(string): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
-    $registerRoutes($router, $home, $services, $serviceDetail);
+    $registerRoutes($router, $home, $services, $serviceDetail, $bookingEntry);
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $uri = $_SERVER['REQUEST_URI'] ?? '/';

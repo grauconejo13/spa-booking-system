@@ -30,7 +30,7 @@ declare(strict_types=1);
             </dl>
             <div class="detail-actions">
                 <a class="button button-secondary" href="/services">Back to services</a>
-                <span class="button button-disabled" aria-disabled="true">Booking coming soon</span>
+                <a class="button" href="/book/<?= $service->id ?>">Start booking</a>
             </div>
         </div>
     </header>

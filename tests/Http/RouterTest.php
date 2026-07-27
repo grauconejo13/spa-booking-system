@@ -41,6 +41,17 @@ final class RouterTest extends TestCase
         self::assertSame('service-42', $response->body());
     }
 
+    public function testItMatchesABookingServiceIdRouteAndPassesTheParameter(): void
+    {
+        $router = new Router();
+        $router->get('/book/{serviceId}', static fn (string $id): Response => new Response('book-' . $id));
+
+        $response = $router->dispatch('GET', '/book/42');
+
+        self::assertSame(200, $response->status());
+        self::assertSame('book-42', $response->body());
+    }
+
     public function testUnknownPathsAndMethodsUseTheNotFoundResponse(): void
     {
         $router = new Router(static fn (): Response => new Response('missing', 404));

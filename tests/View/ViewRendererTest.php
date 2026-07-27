@@ -78,4 +78,38 @@ final class ViewRendererTest extends TestCase
         self::assertStringContainsString('&lt;svg onload=alert(1)&gt;', $html);
         self::assertStringNotContainsString('<svg onload=alert(1)>', $html);
     }
+
+    public function testBookingEntryEscapesServiceAndTherapistValues(): void
+    {
+        $service = new Service(7, '<script>Facial</script>', 'facial', '<img src=x>', 50, 8650, true, 1);
+        $therapist = new Therapist(3, '<b>Mara</b>', 'mara', '<svg onload=alert(1)>', true, 1);
+
+        $html = $this->renderer->render('booking-entry', [
+            'title' => 'Start booking',
+            'service' => $service,
+            'therapists' => [$therapist],
+            'bookingError' => false,
+        ]);
+
+        self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);
+        self::assertStringContainsString('&lt;img src=x&gt;', $html);
+        self::assertStringContainsString('&lt;b&gt;Mara&lt;/b&gt;', $html);
+        self::assertStringContainsString('&lt;svg onload=alert(1)&gt;', $html);
+        self::assertStringNotContainsString('<svg onload=alert(1)>', $html);
+    }
+
+    public function testServiceDetailLinksToTheBookingEntry(): void
+    {
+        $service = new Service(7, 'Forest Facial', 'facial', 'A calming facial.', 50, 8650, true, 1);
+
+        $html = $this->renderer->render('service-detail', [
+            'title' => $service->name,
+            'service' => $service,
+            'therapists' => [],
+            'detailError' => false,
+        ]);
+
+        self::assertStringContainsString('href="/book/7"', $html);
+        self::assertStringContainsString('Start booking', $html);
+    }
 }

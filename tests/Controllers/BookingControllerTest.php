@@ -6,14 +6,14 @@ namespace SpaBooking\Tests\Controllers;
 
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use SpaBooking\Controllers\ServicesController;
+use SpaBooking\Controllers\BookingController;
 use SpaBooking\Models\Service;
 use SpaBooking\Models\Therapist;
 use SpaBooking\Repositories\ServiceCatalogRepository;
 use SpaBooking\Repositories\TherapistCatalogRepository;
 use SpaBooking\View\ViewRenderer;
 
-final class ServiceDetailControllerTest extends TestCase
+final class BookingControllerTest extends TestCase
 {
     private ViewRenderer $views;
 
@@ -22,51 +22,52 @@ final class ServiceDetailControllerTest extends TestCase
         $this->views = new ViewRenderer(dirname(__DIR__, 2) . '/app/Views');
     }
 
-    public function testItRendersAServiceDetailResponse(): void
+    public function testItRendersTheBookingEntryAndSelectedServiceSummary(): void
     {
-        $response = $this->controller($this->service(), [])->show('7');
+        $response = $this->controller($this->service(), [$this->therapist()])->start('7');
 
         self::assertSame(200, $response->status());
         self::assertStringContainsString('Forest Facial', $response->body());
+        self::assertStringContainsString('A calming facial.', $response->body());
         self::assertStringContainsString('50 minutes', $response->body());
         self::assertStringContainsString('$86.50', $response->body());
-        self::assertStringContainsString('Back to services', $response->body());
-        self::assertStringContainsString('Start booking', $response->body());
+        self::assertStringContainsString('Back to service details', $response->body());
+        self::assertStringContainsString('Date selection and available appointment times', $response->body());
+        self::assertStringContainsString('disabled>Continue', $response->body());
     }
 
-    public function testItReturnsNotFoundForAMissingOrInactiveService(): void
+    public function testItOffersAnyAndSpecificQualifiedTherapistChoices(): void
     {
-        $response = $this->controller(null, [])->show('7');
+        $response = $this->controller($this->service(), [$this->therapist()])->start('7');
 
-        self::assertSame(404, $response->status());
-        self::assertStringContainsString('That page is resting', $response->body());
+        self::assertStringContainsString('Any available therapist', $response->body());
+        self::assertStringContainsString('Mara Vale', $response->body());
+        self::assertStringContainsString('Restorative facial specialist.', $response->body());
+        self::assertStringContainsString('value="3"', $response->body());
+    }
+
+    public function testItShowsAFriendlyStateWithoutQualifiedTherapists(): void
+    {
+        $response = $this->controller($this->service(), [])->start('7');
+
+        self::assertSame(200, $response->status());
+        self::assertStringContainsString('No therapists are currently assigned', $response->body());
     }
 
     public function testItReturnsNotFoundForAnInvalidServiceId(): void
     {
-        $response = $this->controller($this->service(), [])->show('not-a-number');
+        $response = $this->controller($this->service(), [])->start('invalid');
 
         self::assertSame(404, $response->status());
         self::assertStringContainsString('That page is resting', $response->body());
     }
 
-    public function testItRendersQualifiedTherapistsAndBiographies(): void
+    public function testItReturnsNotFoundForAMissingOrInactiveService(): void
     {
-        $therapists = [new Therapist(3, 'Mara Vale', 'mara-vale', 'Restorative facial specialist.', true, 1)];
+        $response = $this->controller(null, [])->start('7');
 
-        $response = $this->controller($this->service(), $therapists)->show('7');
-
-        self::assertSame(200, $response->status());
-        self::assertStringContainsString('Mara Vale', $response->body());
-        self::assertStringContainsString('Restorative facial specialist.', $response->body());
-    }
-
-    public function testItRendersAFriendlyMessageWithoutQualifiedTherapists(): void
-    {
-        $response = $this->controller($this->service(), [])->show('7');
-
-        self::assertSame(200, $response->status());
-        self::assertStringContainsString('Therapist availability is being refreshed', $response->body());
+        self::assertSame(404, $response->status());
+        self::assertStringContainsString('That page is resting', $response->body());
     }
 
     public function testItHandlesRepositoryFailuresWithoutExposingDetails(): void
@@ -82,19 +83,22 @@ final class ServiceDetailControllerTest extends TestCase
                 throw new RuntimeException('SQLSTATE password=secret internal-host');
             }
         };
-        $therapists = $this->therapistRepository([]);
 
-        $response = (new ServicesController($this->views, $services, $therapists))->show('7');
+        $response = (new BookingController(
+            $this->views,
+            $services,
+            $this->therapistRepository([])
+        ))->start('7');
 
         self::assertSame(503, $response->status());
-        self::assertStringContainsString('taking a short rest', $response->body());
+        self::assertStringContainsString('Booking is taking a short rest', $response->body());
         self::assertStringNotContainsString('SQLSTATE', $response->body());
         self::assertStringNotContainsString('secret', $response->body());
         self::assertStringNotContainsString('internal-host', $response->body());
     }
 
     /** @param list<Therapist> $therapists */
-    private function controller(?Service $service, array $therapists): ServicesController
+    private function controller(?Service $service, array $therapists): BookingController
     {
         $services = new class ($service) implements ServiceCatalogRepository {
             public function __construct(private readonly ?Service $service)
@@ -112,7 +116,7 @@ final class ServiceDetailControllerTest extends TestCase
             }
         };
 
-        return new ServicesController($this->views, $services, $this->therapistRepository($therapists));
+        return new BookingController($this->views, $services, $this->therapistRepository($therapists));
     }
 
     /** @param list<Therapist> $therapists */
@@ -134,5 +138,10 @@ final class ServiceDetailControllerTest extends TestCase
     private function service(): Service
     {
         return new Service(7, 'Forest Facial', 'forest-facial', 'A calming facial.', 50, 8650, true, 1);
+    }
+
+    private function therapist(): Therapist
+    {
+        return new Therapist(3, 'Mara Vale', 'mara-vale', 'Restorative facial specialist.', true, 1);
     }
 }
