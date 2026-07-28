@@ -11,6 +11,7 @@ use SpaBooking\Models\AppointmentInterval;
 use SpaBooking\Models\Therapist;
 use SpaBooking\Models\TherapistAvailability;
 use SpaBooking\Models\TherapistAvailabilityException;
+use SpaBooking\Models\TherapistAvailabilityState;
 use SpaBooking\Services\AvailabilityService;
 
 final class AvailabilityServiceTest extends TestCase
@@ -106,6 +107,46 @@ final class AvailabilityServiceTest extends TestCase
         $utcStart = $slots[0]->startsAt->setTimezone(new DateTimeZone('UTC'));
 
         self::assertSame('2030-06-03 14:00', $utcStart->format('Y-m-d H:i'));
+    }
+
+    public function testItClassifiesAvailableAndNotScheduledTherapists(): void
+    {
+        $therapists = [$this->therapist(1), $this->therapist(2)];
+        $states = $this->service->states(
+            new DateTimeImmutable('2030-06-03', $this->timezone),
+            60,
+            $therapists,
+            [1 => [$this->window(1, '09:00', '11:00')]],
+            [],
+            []
+        );
+
+        self::assertSame(TherapistAvailabilityState::AVAILABLE, $states[1]->status);
+        self::assertSame(TherapistAvailabilityState::NOT_SCHEDULED, $states[2]->status);
+    }
+
+    public function testItClassifiesDateClosuresAndFullyBookedWindows(): void
+    {
+        $utc = new DateTimeZone('UTC');
+        $therapists = [$this->therapist(1), $this->therapist(2)];
+        $states = $this->service->states(
+            new DateTimeImmutable('2030-06-03', $this->timezone),
+            60,
+            $therapists,
+            [
+                1 => [$this->window(1, '09:00', '10:00')],
+                2 => [$this->window(2, '09:00', '10:00')],
+            ],
+            [1 => [new TherapistAvailabilityException(1, 1, '2030-06-03', false, null, null)]],
+            [2 => [new AppointmentInterval(
+                new DateTimeImmutable('2030-06-03 14:00', $utc),
+                new DateTimeImmutable('2030-06-03 15:00', $utc),
+                'confirmed'
+            )]]
+        );
+
+        self::assertSame(TherapistAvailabilityState::UNAVAILABLE, $states[1]->status);
+        self::assertSame(TherapistAvailabilityState::FULLY_BOOKED, $states[2]->status);
     }
 
     /**

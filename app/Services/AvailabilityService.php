@@ -11,6 +11,7 @@ use SpaBooking\Models\AvailableSlot;
 use SpaBooking\Models\Therapist;
 use SpaBooking\Models\TherapistAvailability;
 use SpaBooking\Models\TherapistAvailabilityException;
+use SpaBooking\Models\TherapistAvailabilityState;
 
 final class AvailabilityService
 {
@@ -59,6 +60,96 @@ final class AvailabilityService
 
                     $cursor = $cursor->add($interval);
                 }
+            }
+        }
+
+        ksort($merged);
+
+        return array_map(
+            static fn (array $slot): AvailableSlot => new AvailableSlot(
+                $slot['startsAt'],
+                array_values(array_unique($slot['therapistIds']))
+            ),
+            array_values($merged)
+        );
+    }
+
+    /**
+     * @param list<Therapist> $therapists
+     * @param array<int, list<TherapistAvailability>> $recurring
+     * @param array<int, list<TherapistAvailabilityException>> $exceptions
+     * @param array<int, list<AppointmentInterval>> $appointments
+     * @return array<int, TherapistAvailabilityState>
+     */
+    public function states(
+        DateTimeImmutable $date,
+        int $durationMinutes,
+        array $therapists,
+        array $recurring,
+        array $exceptions,
+        array $appointments
+    ): array {
+        $states = [];
+
+        foreach ($therapists as $therapist) {
+            $therapistRecurring = $recurring[$therapist->id] ?? [];
+            $therapistExceptions = $exceptions[$therapist->id] ?? [];
+            $closed = $therapistExceptions !== []
+                && array_filter(
+                    $therapistExceptions,
+                    static fn (TherapistAvailabilityException $exception): bool => $exception->isAvailable
+                ) === [];
+
+            if ($closed) {
+                $states[$therapist->id] = new TherapistAvailabilityState(
+                    $therapist->id,
+                    TherapistAvailabilityState::UNAVAILABLE,
+                    []
+                );
+                continue;
+            }
+
+            if ($therapistExceptions === [] && $therapistRecurring === []) {
+                $states[$therapist->id] = new TherapistAvailabilityState(
+                    $therapist->id,
+                    TherapistAvailabilityState::NOT_SCHEDULED,
+                    []
+                );
+                continue;
+            }
+
+            $slots = $this->calculate(
+                $date,
+                $durationMinutes,
+                [$therapist],
+                [$therapist->id => $therapistRecurring],
+                [$therapist->id => $therapistExceptions],
+                [$therapist->id => $appointments[$therapist->id] ?? []]
+            );
+            $status = $slots === []
+                ? TherapistAvailabilityState::FULLY_BOOKED
+                : TherapistAvailabilityState::AVAILABLE;
+            $states[$therapist->id] = new TherapistAvailabilityState($therapist->id, $status, $slots);
+        }
+
+        return $states;
+    }
+
+    /**
+     * @param array<int, TherapistAvailabilityState> $states
+     * @param list<int> $therapistIds
+     * @return list<AvailableSlot>
+     */
+    public function mergeStateSlots(array $states, array $therapistIds): array
+    {
+        /** @var array<string, array{startsAt: DateTimeImmutable, therapistIds: list<int>}> $merged */
+        $merged = [];
+
+        foreach ($therapistIds as $therapistId) {
+            foreach ($states[$therapistId]->slots ?? [] as $slot) {
+                $key = $slot->startsAt->format('H:i');
+                $merged[$key] ??= ['startsAt' => $slot->startsAt, 'therapistIds' => []];
+                $merged[$key]['therapistIds'] = array_merge($merged[$key]['therapistIds'], $slot->therapistIds);
             }
         }
 

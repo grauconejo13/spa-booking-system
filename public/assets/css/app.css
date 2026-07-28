@@ -272,6 +272,83 @@ h2 {
     gap: clamp(2rem, 6vw, 5rem);
 }
 
+.booking-progress ol {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0;
+    margin: 0 0 2rem;
+    list-style: none;
+}
+
+.booking-progress li {
+    padding: 0.8rem;
+    border-bottom: 3px solid var(--line);
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.booking-progress li span {
+    display: inline-grid;
+    width: 1.7rem;
+    height: 1.7rem;
+    margin-right: 0.3rem;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--line);
+}
+
+.booking-progress .is-active {
+    border-color: var(--forest);
+    color: var(--forest-dark);
+}
+
+.booking-progress .is-active span,
+.booking-progress .is-complete span {
+    background: var(--forest);
+    color: white;
+}
+
+.booking-progress .is-complete {
+    border-color: var(--sage);
+    color: var(--forest-dark);
+}
+
+.booking-step {
+    max-width: 52rem;
+    margin-bottom: 1.5rem;
+    padding: clamp(1.25rem, 4vw, 2rem);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: white;
+}
+
+.booking-step.is-active {
+    border-color: var(--forest);
+    box-shadow: var(--shadow);
+}
+
+.booking-step.is-disabled {
+    background: var(--cream);
+    color: var(--muted);
+}
+
+.choice-card.is-unavailable {
+    cursor: not-allowed;
+    opacity: 0.72;
+}
+
+.availability-status {
+    margin-top: 0.45rem;
+}
+
+.availability-message {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-left: 3px solid var(--forest);
+    background: var(--cream);
+}
+
 .choice-list {
     display: grid;
     gap: 0.75rem;
@@ -388,46 +465,6 @@ h2 {
     font-size: 0.9rem;
 }
 
-.customer-details-section {
-    border-top: 1px solid var(--line);
-    background: var(--cream);
-}
-
-.customer-details-form {
-    display: grid;
-    gap: 1rem;
-}
-
-.form-field {
-    display: grid;
-    gap: 0.35rem;
-}
-
-.form-field label {
-    font-weight: 750;
-}
-
-.form-field label span,
-.form-field small {
-    color: var(--muted);
-    font-weight: 400;
-}
-
-.form-field input,
-.form-field textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--line);
-    border-radius: 0.35rem;
-    background: white;
-    color: var(--ink);
-    font: inherit;
-}
-
-.form-field textarea {
-    min-height: 8rem;
-    resize: vertical;
-}
 
 .catalog-message {
     max-width: 42rem;
@@ -520,6 +557,10 @@ h2 {
     .card-grid,
     .footer-grid {
         grid-template-columns: 1fr;
+    }
+
+    .booking-progress ol {
+        grid-template-columns: 1fr 1fr;
     }
 
     .js .nav-toggle {

@@ -10,10 +10,12 @@
 4. Server previews 30-minute-interval start times using recurring hours, date exceptions, service
    duration, and pending or confirmed appointments. "Any" results merge identical starts without
    assigning a therapist.
-5. Visitor selects a freshly calculated time. The server rejects malformed or unavailable time values
-   and retains every candidate therapist for an "any" selection without assigning one.
-6. Visitor enters a required name, valid email, required phone number, and optional note. The current
-   customer-details screen is non-submitting and clearly states that no appointment is reserved.
+5. The page shows progress through Therapist, Date & Time, Your Details, and Review. Selection forms
+   return to `#booking-flow`, and each therapist remains visible with an available, not scheduled,
+   fully booked, unavailable, or date-not-yet-chosen state.
+6. Visitor selects a freshly calculated time. The server rejects malformed or unavailable values and
+   retains every candidate therapist for an "any" selection without assigning one. Customer details
+   and review remain visibly marked as later steps.
 7. Visitor reviews the request and submits a CSRF-protected form.
 8. Server normalizes and validates all fields, reloads the service and therapist choice, and rechecks availability.
 9. Within a transaction, the server locks/rechecks a qualified therapist, assigns that therapist (deterministically when "any" was chosen), prevents a per-therapist collision, and creates a `pending` appointment with snapshot values and a random reference.

@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use SpaBooking\Models\Service;
 use SpaBooking\Models\Therapist;
+use SpaBooking\Models\TherapistAvailabilityState;
 use SpaBooking\View\ViewRenderer;
 
 final class ViewRendererTest extends TestCase
@@ -96,6 +97,8 @@ final class ViewRendererTest extends TestCase
             'selectedTime' => '',
             'timeError' => null,
             'selectedSlot' => null,
+            'hasTherapistSelection' => false,
+            'therapistStates' => [],
         ]);
 
         self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);
@@ -118,5 +121,42 @@ final class ViewRendererTest extends TestCase
 
         self::assertStringContainsString('href="/book/7"', $html);
         self::assertStringContainsString('Start booking', $html);
+    }
+
+    public function testBookingEntryShowsDistinctUnavailableTherapistStatesAccessibly(): void
+    {
+        $service = new Service(7, 'Forest Facial', 'facial', 'A calming facial.', 50, 8650, true, 1);
+        $therapists = [
+            new Therapist(1, 'Not Scheduled', 'not-scheduled', 'Bio one.', true, 1),
+            new Therapist(2, 'Fully Booked', 'fully-booked', 'Bio two.', true, 2),
+            new Therapist(3, 'Closed Today', 'closed', 'Bio three.', true, 3),
+        ];
+        $states = [
+            1 => new TherapistAvailabilityState(1, TherapistAvailabilityState::NOT_SCHEDULED, []),
+            2 => new TherapistAvailabilityState(2, TherapistAvailabilityState::FULLY_BOOKED, []),
+            3 => new TherapistAvailabilityState(3, TherapistAvailabilityState::UNAVAILABLE, []),
+        ];
+
+        $html = $this->renderer->render('booking-entry', [
+            'title' => 'Start booking',
+            'service' => $service,
+            'therapists' => $therapists,
+            'bookingError' => false,
+            'selectedTherapist' => 'any',
+            'selectedDate' => '2030-06-03',
+            'dateError' => null,
+            'slots' => [],
+            'selectedTime' => '',
+            'timeError' => null,
+            'selectedSlot' => null,
+            'hasTherapistSelection' => true,
+            'therapistStates' => $states,
+        ]);
+
+        self::assertStringContainsString('<b>Not scheduled</b>', $html);
+        self::assertStringContainsString('<b>Fully booked</b>', $html);
+        self::assertStringContainsString('<b>Unavailable</b>', $html);
+        self::assertStringContainsString('disabled aria-describedby="therapist-status-1"', $html);
+        self::assertStringContainsString('No therapists are available on this date.', $html);
     }
 }

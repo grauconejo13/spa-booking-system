@@ -48,13 +48,17 @@ final class BookingController extends Controller
 
             $therapists = $this->therapists->findActiveQualifiedForService($id);
 
-            $selectedTherapist = is_string($query['therapist'] ?? null) ? $query['therapist'] : 'any';
+            $requestedTherapist = is_string($query['therapist'] ?? null) ? $query['therapist'] : null;
+            $selectedTherapist = $requestedTherapist ?? 'any';
+            $hasTherapistSelection = $requestedTherapist === 'any' && $therapists !== [];
             $qualifiedIds = array_map(static fn ($therapist): int => $therapist->id, $therapists);
 
             if ($selectedTherapist !== 'any') {
                 $selectedId = filter_var($selectedTherapist, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
                 if (!is_int($selectedId) || !in_array($selectedId, $qualifiedIds, true)) {
                     $selectedTherapist = 'any';
+                } else {
+                    $hasTherapistSelection = true;
                 }
             }
 
@@ -65,25 +69,20 @@ final class BookingController extends Controller
             $timeError = null;
             $selectedSlot = null;
             $slots = [];
+            $therapistStates = [];
 
             if ($selectedDate !== '' && $date === null) {
                 $dateError = 'Choose a valid date in YYYY-MM-DD format.';
             } elseif ($date !== null && $date < $this->currentDate()) {
                 $dateError = 'Choose today or a future date.';
-            } elseif ($date !== null && $therapists !== []) {
-                $candidates = $selectedTherapist === 'any'
-                    ? $therapists
-                    : array_values(array_filter(
-                        $therapists,
-                        static fn ($therapist): bool => $therapist->id === (int) $selectedTherapist
-                    ));
+            } elseif ($date !== null && $therapists !== [] && $hasTherapistSelection) {
                 $recurring = [];
                 $exceptions = [];
                 $blocking = [];
                 $dayStart = $date->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
                 $dayEnd = $date->modify('+1 day')->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
 
-                foreach ($candidates as $therapist) {
+                foreach ($therapists as $therapist) {
                     $recurring[$therapist->id] = $this->availability->findAvailability(
                         $therapist->id,
                         (int) $date->format('N')
@@ -99,14 +98,18 @@ final class BookingController extends Controller
                     );
                 }
 
-                $slots = $this->availabilityService->calculate(
+                $therapistStates = $this->availabilityService->states(
                     $date,
                     $service->durationMinutes,
-                    $candidates,
+                    $therapists,
                     $recurring,
                     $exceptions,
                     $blocking
                 );
+                $candidateIds = $selectedTherapist === 'any'
+                    ? $qualifiedIds
+                    : [(int) $selectedTherapist];
+                $slots = $this->availabilityService->mergeStateSlots($therapistStates, $candidateIds);
             }
 
             if ($selectedTime !== '') {
@@ -138,6 +141,8 @@ final class BookingController extends Controller
                 'selectedTime' => '',
                 'timeError' => null,
                 'selectedSlot' => null,
+                'hasTherapistSelection' => false,
+                'therapistStates' => [],
             ], 503);
         }
 
@@ -153,6 +158,8 @@ final class BookingController extends Controller
             'selectedTime' => $selectedTime,
             'timeError' => $timeError,
             'selectedSlot' => $selectedSlot,
+            'hasTherapistSelection' => $hasTherapistSelection,
+            'therapistStates' => $therapistStates,
         ]);
     }
 
