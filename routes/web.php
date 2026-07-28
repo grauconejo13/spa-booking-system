@@ -11,11 +11,15 @@ return static function (
     callable $services,
     callable $serviceDetail,
     callable $bookingEntry,
-    callable $bookingReview
+    callable $bookingReview,
+    callable $bookingConfirm,
+    callable $bookingConfirmation
 ): void {
     $router->get('/', [$home, 'index']);
     $router->get('/services', $services);
     $router->get('/services/{id}', $serviceDetail);
     $router->get('/book/{serviceId}', $bookingEntry);
     $router->post('/book/{serviceId}', $bookingReview);
+    $router->post('/book/{serviceId}/confirm', $bookingConfirm);
+    $router->get('/booking/confirmation/{reference}', $bookingConfirmation);
 };

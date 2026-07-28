@@ -104,6 +104,8 @@ final class ViewRendererTest extends TestCase
             'csrfToken' => 'test-token',
             'reviewReady' => false,
             'activeStep' => 'therapist',
+            'submissionToken' => '',
+            'bookingMessage' => null,
         ]);
 
         self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);
@@ -161,6 +163,8 @@ final class ViewRendererTest extends TestCase
             'csrfToken' => 'test-token',
             'reviewReady' => false,
             'activeStep' => 'therapist',
+            'submissionToken' => '',
+            'bookingMessage' => null,
         ]);
 
         self::assertStringContainsString('<b>Not scheduled</b>', $html);

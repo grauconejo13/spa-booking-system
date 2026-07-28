@@ -19,8 +19,8 @@ data, and focused PDO repositories. Phase 3 now loads the public services catalo
 including qualified therapists, from MySQL. A read-only booking entry presents therapist preferences;
 date and time-slot selection now use a progressive, position-preserving flow with visible therapist
 availability states. A horizontal, server-rendered wizard validates customer details into a CSRF-protected,
-non-persisting review while preserving backward navigation;
-appointment submission remains planned.
+review while preserving backward navigation. Final confirmation revalidates availability in a transaction,
+creates a pending appointment, and redirects to a public-reference confirmation page.
 
 ## Technology stack
 
@@ -57,6 +57,8 @@ php -S localhost:8000 -t public public/router.php
 Then visit `http://localhost:8000`; the services page is available at `http://localhost:8000/services`,
 with individual active services linked at `/services/{id}`.
 The service detail page links to the booking entry at `/book/{serviceId}`.
+Final requests post to `/book/{serviceId}/confirm`; successful creation redirects to
+`/booking/confirmation/{reference}` without placing customer contact details in the URL.
 
 ## Database setup
 

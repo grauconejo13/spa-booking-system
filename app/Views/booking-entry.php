@@ -158,6 +158,11 @@ $selectionQuery = static function (string $step) use (
                 <section class="wizard-panel" aria-labelledby="datetime-heading">
                     <p class="eyebrow">Step 2</p>
                     <h2 id="datetime-heading" tabindex="-1" data-booking-focus>Choose date and time</h2>
+                    <?php if ($bookingMessage !== null) : ?>
+                        <div class="error-summary" role="alert" tabindex="-1" data-booking-focus>
+                            <p><?= htmlspecialchars($bookingMessage, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                    <?php endif; ?>
                     <p><strong>Therapist preference:</strong>
                         <?= htmlspecialchars($therapistPreference, ENT_QUOTES, 'UTF-8') ?>
                     </p>
@@ -287,7 +292,7 @@ $selectionQuery = static function (string $step) use (
                         <?php endif; ?>
                     </dl>
                     <p><strong>Your appointment has not been booked yet.</strong></p>
-                    <form method="post" action="/book/<?= $service->id ?>#booking-flow">
+                    <form method="post" action="/book/<?= $service->id ?>/confirm" data-confirm-booking>
                         <input type="hidden" name="_token"
                             value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="therapist"
@@ -296,15 +301,18 @@ $selectionQuery = static function (string $step) use (
                             value="<?= htmlspecialchars($selectedDate, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="time"
                             value="<?= htmlspecialchars($selectedTime, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="submission_token"
+                            value="<?= htmlspecialchars($submissionToken, ENT_QUOTES, 'UTF-8') ?>">
                         <?php foreach ($customer as $field => $value) : ?>
                             <input type="hidden" name="<?= $field ?>"
                                 value="<?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>">
                         <?php endforeach; ?>
                         <div class="wizard-navigation">
-                            <button class="button button-secondary" type="submit" name="step" value="details">
+                            <button class="button button-secondary" type="submit" name="step" value="details"
+                                formaction="/book/<?= $service->id ?>#booking-flow">
                                 Back
                             </button>
-                            <button class="button" type="button" disabled>Confirm booking — coming next</button>
+                            <button class="button" type="submit" data-confirm-button>Confirm booking</button>
                         </div>
                     </form>
                 </section>

@@ -15,3 +15,14 @@ const bookingFocusTarget = document.querySelector('[data-booking-focus]');
 if (window.location.hash === '#booking-flow' && bookingFocusTarget instanceof HTMLElement) {
     bookingFocusTarget.focus({ preventScroll: false });
 }
+
+const confirmationForm = document.querySelector('[data-confirm-booking]');
+if (confirmationForm instanceof HTMLFormElement) {
+    confirmationForm.addEventListener('submit', () => {
+        const button = confirmationForm.querySelector('[data-confirm-button]');
+        if (button instanceof HTMLButtonElement) {
+            button.disabled = true;
+            button.textContent = 'Submitting request…';
+        }
+    });
+}

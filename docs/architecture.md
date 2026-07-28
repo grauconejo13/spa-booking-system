@@ -56,11 +56,15 @@ Routes are declared explicitly in `routes/web.php`, grouped conceptually into pu
 - Expected validation failures return field-level feedback and preserve safe input.
 - Unexpected failures are handled centrally by the front controller.
 
-The booking route supports GET previews and a POST-only customer-details validation boundary. The POST
+The booking route supports GET previews and POST-only customer-details and final-confirmation boundaries. The POST
 uses a session-backed CSRF token, recalculates the selected time from repository schedule data, and
 renders a non-persisting review state. Customer contact values remain in the request body and are never
 placed in redirect or query parameters. An explicit step value requests wizard navigation, while the
 controller remains authoritative: each transition is reduced to the latest step whose prerequisites are valid.
+Final creation begins a transaction, locks active qualified therapist rows in stable ID order with
+`SELECT ... FOR UPDATE`, reloads availability and blocking appointments, assigns a therapist, and inserts
+the pending appointment before committing. These parent-row locks serialize competing bookings even when
+no overlapping appointment row exists yet, avoiding the phantom gap left by an overlap query alone.
 
 ## Architectural decisions
 
@@ -102,7 +106,7 @@ controller remains authoritative: each transition is reduced to the latest step 
 
 ### ADR-007: Deterministic assignment for "any therapist"
 
-**Decision:** Availability queries may show a time when at least one qualified therapist can perform the service. At booking time, the service rechecks candidates in a transaction and deterministically assigns an available therapist, initially by stable therapist ID order.
+**Decision:** Availability queries may show a time when at least one qualified therapist can perform the service. At booking time, the service rechecks candidates in a transaction and assigns the available therapist with the fewest blocking appointments that day, then the lowest therapist ID.
 
 **Rationale:** A concrete therapist is required for collision protection. Deterministic selection is testable and avoids implying workload optimization, payroll, or preference logic that is outside scope.
 
@@ -127,9 +131,16 @@ intervals in UTC, and merge identical "any therapist" starts while retaining all
 **Rationale:** Pure calculation remains deterministic and unit-testable, while repositories stay focused
 on loading schedule inputs. Previewing candidates does not reserve or assign a therapist.
 
+### ADR-011: Therapist-row locking for collision prevention
+
+**Decision:** Lock every active qualified therapist row in ascending ID order before final availability
+recalculation. Insert the appointment on the same PDO connection and commit only after the overlap-safe check.
+
+**Rationale:** MySQL has no general exclusion constraint. Stable parent-row locks serialize both specific
+and "any therapist" assignment without relying on an existing appointment row to lock.
+
 ## Deferred decisions
 
 - Whether CSS growth justifies an SCSS build step
-- Final availability locking strategy after a concurrency-focused prototype
 
 These should be resolved in the phase that first needs them and recorded here.

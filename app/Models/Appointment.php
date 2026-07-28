@@ -22,7 +22,8 @@ final readonly class Appointment
         public ?string $customerNote,
         public DateTimeImmutable $startsAt,
         public DateTimeImmutable $endsAt,
-        public string $status
+        public string $status,
+        public ?string $therapistName = null
     ) {
     }
 }

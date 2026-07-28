@@ -19,6 +19,7 @@ use SpaBooking\Repositories\TherapistCatalogRepository;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AvailabilityService;
 use SpaBooking\Services\BookingDraftStore;
+use SpaBooking\Services\BookingSubmissionStore;
 use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\View\ViewRenderer;
@@ -219,7 +220,8 @@ final class BookingControllerTest extends TestCase
         self::assertSame(200, $response->status());
         self::assertStringContainsString('aria-current="step"', $response->body());
         self::assertStringContainsString('Your appointment has not been booked yet.', $response->body());
-        self::assertStringContainsString('Confirm booking — coming next', $response->body());
+        self::assertStringContainsString('Confirm booking', $response->body());
+        self::assertStringContainsString('action="/book/7/confirm"', $response->body());
         self::assertStringContainsString('Avery Reed', $response->body());
         self::assertStringContainsString('Any available therapist', $response->body());
         self::assertStringContainsString('data-booking-focus', $response->body());
@@ -297,6 +299,7 @@ final class BookingControllerTest extends TestCase
             new CustomerDetailsValidator(),
             new TimeSelectionValidator(),
             new BookingDraftStore($this->session),
+            new BookingSubmissionStore($this->session),
             new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         ))->start('7');
 
@@ -338,6 +341,7 @@ final class BookingControllerTest extends TestCase
             new CustomerDetailsValidator(),
             new TimeSelectionValidator(),
             new BookingDraftStore($this->session),
+            new BookingSubmissionStore($this->session),
             new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         );
     }

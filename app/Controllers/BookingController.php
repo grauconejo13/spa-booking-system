@@ -15,6 +15,7 @@ use SpaBooking\Repositories\TherapistCatalogRepository;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AvailabilityService;
 use SpaBooking\Services\BookingDraftStore;
+use SpaBooking\Services\BookingSubmissionStore;
 use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\View\ViewRenderer;
@@ -34,6 +35,7 @@ final class BookingController extends Controller
         private readonly CustomerDetailsValidator $customerValidator,
         private readonly TimeSelectionValidator $timeValidator,
         private readonly BookingDraftStore $drafts,
+        private readonly BookingSubmissionStore $submissions,
         private readonly ?DateTimeImmutable $today = null
     ) {
         parent::__construct($views);
@@ -51,6 +53,9 @@ final class BookingController extends Controller
 
             $data = $this->withCustomerState($data, $this->drafts->get((int) $data['service']->id));
             $data['activeStep'] = $this->resolveGetStep($query, $data);
+            $data['bookingMessage'] = ($query['booking_error'] ?? null) === 'stale'
+                ? 'That appointment time is no longer available. Please choose another time.'
+                : null;
 
             return $this->render('booking-entry', $data);
         } catch (Throwable) {
@@ -100,6 +105,7 @@ final class BookingController extends Controller
 
             $data['reviewReady'] = $data['formErrors'] === [];
             $data['activeStep'] = $data['reviewReady'] ? 'review' : 'details';
+            $data['submissionToken'] = $data['reviewReady'] ? $this->submissions->issue() : '';
 
             return $this->render('booking-entry', $data, $data['reviewReady'] ? 200 : 422);
         } catch (Throwable) {
@@ -221,6 +227,8 @@ final class BookingController extends Controller
         $data['formErrors'] = $errors;
         $data['csrfToken'] = $this->csrf->token();
         $data['reviewReady'] = false;
+        $data['submissionToken'] = '';
+        $data['bookingMessage'] = null;
 
         return $data;
     }

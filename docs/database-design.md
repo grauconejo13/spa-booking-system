@@ -105,7 +105,9 @@ define split override windows; a closed-date row has no start or end time.
 
 Indexes: unique `reference`; `(therapist_id, starts_at, ends_at, status)` for availability; `(status, starts_at)` for admin lists; `customer_email` for admin search if that feature is retained.
 
-MySQL cannot express a general non-overlap exclusion constraint. The booking service will check the assigned therapist for overlapping blocking appointments inside a transaction. The final locking/isolation approach must be verified with concurrent integration tests in Phase 3. The rule is:
+MySQL cannot express a general non-overlap exclusion constraint. The booking service locks active qualified
+therapist rows in stable ID order, then checks blocking appointments and inserts on the same transaction. This
+serializes competing requests even when no appointment row exists yet. The rule is:
 
 ```sql
 existing.starts_at < requested_end

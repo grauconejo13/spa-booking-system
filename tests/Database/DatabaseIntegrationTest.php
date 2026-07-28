@@ -25,6 +25,10 @@ final class DatabaseIntegrationTest extends TestCase
 
     private static ?MigrationRunner $migrations = null;
 
+    /** @var array{host: string, port: int, database: string, username: string,
+     *     password: string, charset: string, options: array<int, mixed>}|null */
+    private static ?array $config = null;
+
     protected function setUp(): void
     {
         if (self::$pdo !== null) {
@@ -53,6 +57,7 @@ final class DatabaseIntegrationTest extends TestCase
         }
 
         $config['database'] = $database;
+        self::$config = $config;
         self::$pdo = (new PdoConnectionFactory($config))->create();
         self::$migrations = new MigrationRunner(self::$pdo, $root . '/database/migrations');
 
@@ -80,6 +85,7 @@ final class DatabaseIntegrationTest extends TestCase
         self::$pdo->exec('DROP TABLE migrations');
         self::$migrations = null;
         self::$pdo = null;
+        self::$config = null;
     }
 
     public function testMigrationsAndSeedsAreRepeatable(): void
@@ -131,5 +137,66 @@ final class DatabaseIntegrationTest extends TestCase
         ));
         self::assertNotNull($administrator);
         self::assertTrue(password_verify('SpaDemo!2026', $administrator->passwordHash));
+    }
+
+    public function testTransactionalAppointmentInsertAndOverlapBoundaries(): void
+    {
+        self::assertNotNull(self::$pdo);
+        $appointments = new AppointmentRepository(self::$pdo);
+        $startsAt = new DateTimeImmutable('2031-01-06 15:00:00');
+        $endsAt = new DateTimeImmutable('2031-01-06 16:00:00');
+        $appointments->beginTransaction();
+
+        try {
+            $locked = (new TherapistRepository(self::$pdo))->lockActiveQualifiedForService(1);
+            $appointments->create(
+                'SPA-TEST0001',
+                1,
+                $locked[0]->id,
+                'Stillwater Massage',
+                60,
+                9500,
+                ['name' => 'Test Guest', 'email' => 'guest@example.test', 'phone' => '', 'notes' => ''],
+                $startsAt,
+                $endsAt
+            );
+
+            self::assertTrue($appointments->hasBlockingOverlap(
+                $locked[0]->id,
+                new DateTimeImmutable('2031-01-06 15:30:00'),
+                new DateTimeImmutable('2031-01-06 16:30:00')
+            ));
+            self::assertFalse($appointments->hasBlockingOverlap(
+                $locked[0]->id,
+                new DateTimeImmutable('2031-01-06 16:00:00'),
+                new DateTimeImmutable('2031-01-06 17:00:00')
+            ));
+        } finally {
+            $appointments->rollBack();
+        }
+
+        self::assertNull($appointments->findByReference('SPA-TEST0001'));
+    }
+
+    public function testTherapistLocksSerializeCompetingBookingTransactions(): void
+    {
+        self::assertNotNull(self::$pdo);
+        self::assertNotNull(self::$config);
+        $firstAppointments = new AppointmentRepository(self::$pdo);
+        $secondPdo = (new PdoConnectionFactory(self::$config))->create();
+        $secondAppointments = new AppointmentRepository($secondPdo);
+        $firstAppointments->beginTransaction();
+
+        try {
+            (new TherapistRepository(self::$pdo))->lockActiveQualifiedForService(1);
+            $secondPdo->exec('SET SESSION innodb_lock_wait_timeout = 1');
+            $secondAppointments->beginTransaction();
+
+            $this->expectException(\PDOException::class);
+            (new TherapistRepository($secondPdo))->lockActiveQualifiedForService(1);
+        } finally {
+            $secondAppointments->rollBack();
+            $firstAppointments->rollBack();
+        }
     }
 }

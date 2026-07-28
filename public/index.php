@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use SpaBooking\Config\Environment;
 use SpaBooking\Controllers\BookingController;
+use SpaBooking\Controllers\BookingConfirmationController;
+use SpaBooking\Controllers\BookingSubmissionController;
 use SpaBooking\Controllers\HomeController;
 use SpaBooking\Controllers\ServicesController;
 use SpaBooking\Database\PdoConnectionFactory;
@@ -19,6 +21,10 @@ use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\Services\AvailabilityService;
 use SpaBooking\Services\BookingDraftStore;
+use SpaBooking\Services\BookingReferenceGenerator;
+use SpaBooking\Services\BookingService;
+use SpaBooking\Services\BookingSubmissionStore;
+use SpaBooking\Services\TherapistAssignmentService;
 use SpaBooking\View\ViewRenderer;
 
 $root = dirname(__DIR__);
@@ -76,11 +82,13 @@ try {
     /** @var array<string, mixed> $session */
     $session =& $_SESSION;
     $csrf = new CsrfTokenManager($session);
+    $submissions = new BookingSubmissionStore($session);
     $bookingController = static function () use (
         $appConfig,
         $csrf,
         $databaseConfig,
         $views,
+        $submissions,
         &$session
     ): BookingController {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
@@ -97,13 +105,54 @@ try {
             $csrf,
             new CustomerDetailsValidator(),
             new TimeSelectionValidator(),
-            new BookingDraftStore($session)
+            new BookingDraftStore($session),
+            $submissions
         );
     };
     $bookingEntry = static fn (string $serviceId): Response =>
         $bookingController()->start($serviceId, $_GET);
     $bookingReview = static fn (string $serviceId): Response =>
         $bookingController()->review($serviceId, $_POST);
+    $bookingConfirm = static function (string $serviceId) use (
+        $appConfig,
+        $csrf,
+        $databaseConfig,
+        $submissions
+    ): Response {
+        $pdo = (new PdoConnectionFactory($databaseConfig))->create();
+        $therapists = new TherapistRepository($pdo);
+        $appointments = new AppointmentRepository($pdo);
+        $bookings = new BookingService(
+            new ServiceRepository($pdo),
+            $therapists,
+            $therapists,
+            $appointments,
+            new AvailabilityService(),
+            new TherapistAssignmentService(),
+            new BookingReferenceGenerator(),
+            new DateTimeZone($appConfig['timezone'])
+        );
+
+        return (new BookingSubmissionController(
+            $csrf,
+            new CustomerDetailsValidator(),
+            $bookings,
+            $submissions
+        ))->confirm($serviceId, $_POST);
+    };
+    $bookingConfirmation = static function (string $reference) use (
+        $appConfig,
+        $databaseConfig,
+        $views
+    ): Response {
+        $repository = new AppointmentRepository((new PdoConnectionFactory($databaseConfig))->create());
+
+        return (new BookingConfirmationController(
+            $views,
+            $repository,
+            new DateTimeZone($appConfig['timezone'])
+        ))->show($reference);
+    };
     $router = new Router(
         static fn (): Response => new Response(
             $views->render('errors/404', ['title' => 'Page not found']),
@@ -112,9 +161,19 @@ try {
     );
 
     /** @var callable(Router, HomeController, callable(): Response, callable(string): Response,
-     *     callable(string): Response, callable(string): Response): void $registerRoutes */
+     *     callable(string): Response, callable(string): Response, callable(string): Response,
+     *     callable(string): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
-    $registerRoutes($router, $home, $services, $serviceDetail, $bookingEntry, $bookingReview);
+    $registerRoutes(
+        $router,
+        $home,
+        $services,
+        $serviceDetail,
+        $bookingEntry,
+        $bookingReview,
+        $bookingConfirm,
+        $bookingConfirmation
+    );
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $uri = $_SERVER['REQUEST_URI'] ?? '/';

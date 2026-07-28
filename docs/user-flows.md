@@ -18,10 +18,12 @@
 7. Visitor submits name, email, phone, and optional notes through a CSRF-protected POST. The server
    recalculates availability, trims and validates the values, and renders accessible inline errors or
    a review summary. Back navigation uses a session draft, so customer details never enter the URL.
-8. The review state clearly says the appointment is not booked; final submission remains unavailable.
-9. In a later step, the server will revalidate all fields and availability transactionally.
-10. The future persistence step will assign a therapist, prevent collisions, and create a pending appointment.
-11. Visitor will then see a confirmation page with a reference but no sensitive data in the URL.
+8. Visitor confirms the review through a second CSRF-protected POST. The server locks qualified therapists,
+   recalculates availability, validates customer details again, and creates a pending appointment in UTC.
+9. "Any therapist" chooses the available therapist with the fewest blocking appointments that date, using
+   the lowest therapist ID as the stable tie-breaker.
+10. Post/Redirect/Get sends the visitor to `/booking/confirmation/{reference}`, which shows the assigned
+    therapist and spa-local appointment time without exposing contact details or the internal database ID.
 
 Failure paths:
 

@@ -14,6 +14,8 @@ Treat all request values, route parameters, headers, cookies, seed imports, and 
 - Configure `PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION`, `PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC`, and native prepares when compatible with the query.
 - Give runtime credentials only `SELECT`, `INSERT`, `UPDATE`, and `DELETE` access to the application schema.
 - Use constraints, transactions, and tested concurrency handling for therapist assignment and booking consistency.
+- Final booking creation locks active qualified therapist rows in ascending ID order before recalculating
+  availability and inserting, so competing requests cannot pass an empty overlap query concurrently.
 
 ### Input and output
 
@@ -37,6 +39,8 @@ Treat all request values, route parameters, headers, cookies, seed imports, and 
 - Generate cryptographically random, session-bound CSRF tokens and compare with `hash_equals()`.
 - Require tokens on booking, sign-in, sign-out, and all admin mutations.
 - Use POST for state changes; reject unsupported methods.
+- Final booking submissions use a session-bound, single-use submission token. A completed token maps to its
+  public reference so a repeated POST redirects to the existing confirmation instead of inserting again.
 
 ### Errors, logging, and privacy
 
