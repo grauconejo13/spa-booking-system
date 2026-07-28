@@ -10,10 +10,12 @@ return static function (
     HomeController $home,
     callable $services,
     callable $serviceDetail,
-    callable $bookingEntry
+    callable $bookingEntry,
+    callable $bookingReview
 ): void {
     $router->get('/', [$home, 'index']);
     $router->get('/services', $services);
     $router->get('/services/{id}', $serviceDetail);
     $router->get('/book/{serviceId}', $bookingEntry);
+    $router->post('/book/{serviceId}', $bookingReview);
 };

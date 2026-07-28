@@ -13,7 +13,9 @@ use SpaBooking\Http\Router;
 use SpaBooking\Repositories\AppointmentRepository;
 use SpaBooking\Repositories\ServiceRepository;
 use SpaBooking\Repositories\TherapistRepository;
+use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\InMemoryServiceCatalog;
+use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\Services\AvailabilityService;
 use SpaBooking\View\ViewRenderer;
 
@@ -35,9 +37,17 @@ $errors = new ErrorHandler($views, false, $root . '/storage/logs/app.log');
 try {
     Environment::load($root . '/.env');
 
-    /** @var array{debug: bool, timezone: string} $appConfig */
+    /** @var array{debug: bool, timezone: string, url: string} $appConfig */
     $appConfig = require $root . '/config/app.php';
     date_default_timezone_set($appConfig['timezone']);
+
+    session_set_cookie_params([
+        'httponly' => true,
+        'secure' => str_starts_with($appConfig['url'], 'https://'),
+        'samesite' => 'Lax',
+        'path' => '/',
+    ]);
+    session_start();
 
     $errors = new ErrorHandler($views, $appConfig['debug'], $root . '/storage/logs/app.log');
     $errors->register();
@@ -61,20 +71,29 @@ try {
             new TherapistRepository($pdo)
         ))->show($id);
     };
-    $bookingEntry = static function (string $serviceId) use ($appConfig, $databaseConfig, $views): Response {
+    /** @var array<string, mixed> $session */
+    $session =& $_SESSION;
+    $csrf = new CsrfTokenManager($session);
+    $bookingController = static function () use ($appConfig, $csrf, $databaseConfig, $views): BookingController {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
         $therapists = new TherapistRepository($pdo);
 
-        return (new BookingController(
+        return new BookingController(
             $views,
             new ServiceRepository($pdo),
             $therapists,
             $therapists,
             new AppointmentRepository($pdo),
             new AvailabilityService(),
-            new DateTimeZone($appConfig['timezone'])
-        ))->start($serviceId, $_GET);
+            new DateTimeZone($appConfig['timezone']),
+            $csrf,
+            new CustomerDetailsValidator()
+        );
     };
+    $bookingEntry = static fn (string $serviceId): Response =>
+        $bookingController()->start($serviceId, $_GET);
+    $bookingReview = static fn (string $serviceId): Response =>
+        $bookingController()->review($serviceId, $_POST);
     $router = new Router(
         static fn (): Response => new Response(
             $views->render('errors/404', ['title' => 'Page not found']),
@@ -83,9 +102,9 @@ try {
     );
 
     /** @var callable(Router, HomeController, callable(): Response, callable(string): Response,
-     *     callable(string): Response): void $registerRoutes */
+     *     callable(string): Response, callable(string): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
-    $registerRoutes($router, $home, $services, $serviceDetail, $bookingEntry);
+    $registerRoutes($router, $home, $services, $serviceDetail, $bookingEntry, $bookingReview);
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $uri = $_SERVER['REQUEST_URI'] ?? '/';

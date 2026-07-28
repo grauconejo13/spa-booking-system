@@ -7,11 +7,14 @@ namespace SpaBooking\Controllers;
 use DateTimeImmutable;
 use DateTimeZone;
 use SpaBooking\Http\Response;
+use SpaBooking\Models\Therapist;
 use SpaBooking\Repositories\AppointmentScheduleRepository;
 use SpaBooking\Repositories\AvailabilityRepository;
 use SpaBooking\Repositories\ServiceCatalogRepository;
 use SpaBooking\Repositories\TherapistCatalogRepository;
+use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AvailabilityService;
+use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\View\ViewRenderer;
 use Throwable;
 
@@ -25,6 +28,8 @@ final class BookingController extends Controller
         private readonly AppointmentScheduleRepository $appointments,
         private readonly AvailabilityService $availabilityService,
         private readonly DateTimeZone $timezone,
+        private readonly CsrfTokenManager $csrf,
+        private readonly CustomerDetailsValidator $customerValidator,
         private readonly ?DateTimeImmutable $today = null
     ) {
         parent::__construct($views);
@@ -33,120 +38,148 @@ final class BookingController extends Controller
     /** @param array<string, mixed> $query */
     public function start(string $serviceId, array $query = []): Response
     {
+        try {
+            $data = $this->prepare($serviceId, $query);
+
+            if ($data instanceof Response) {
+                return $data;
+            }
+
+            return $this->render('booking-entry', $this->withCustomerState($data));
+        } catch (Throwable) {
+            return $this->failure();
+        }
+    }
+
+    /** @param array<string, mixed> $input */
+    public function review(string $serviceId, array $input): Response
+    {
+        try {
+            $data = $this->prepare($serviceId, $input);
+
+            if ($data instanceof Response) {
+                return $data;
+            }
+
+            $validation = $this->customerValidator->validate($input);
+            $data = $this->withCustomerState($data, $validation['values'], $validation['errors']);
+
+            if (!$this->csrf->validate($input['_token'] ?? null)) {
+                $data['formErrors']['csrf'] = 'Your session check failed. Please try again.';
+                return $this->render('booking-entry', $data, 419);
+            }
+
+            if ($data['selectedSlot'] === null) {
+                $data['formErrors']['selection'] = 'Choose a currently available appointment time.';
+            }
+
+            $data['reviewReady'] = $data['formErrors'] === [];
+
+            return $this->render('booking-entry', $data, $data['reviewReady'] ? 200 : 422);
+        } catch (Throwable) {
+            return $this->failure();
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>|Response
+     */
+    private function prepare(string $serviceId, array $input): array|Response
+    {
         $id = filter_var($serviceId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
         if (!is_int($id)) {
             return $this->notFound();
         }
 
-        try {
-            $service = $this->services->findActiveById($id);
+        $service = $this->services->findActiveById($id);
 
-            if ($service === null) {
-                return $this->notFound();
-            }
-
-            $therapists = $this->therapists->findActiveQualifiedForService($id);
-
-            $requestedTherapist = is_string($query['therapist'] ?? null) ? $query['therapist'] : null;
-            $selectedTherapist = $requestedTherapist ?? 'any';
-            $hasTherapistSelection = $requestedTherapist === 'any' && $therapists !== [];
-            $qualifiedIds = array_map(static fn ($therapist): int => $therapist->id, $therapists);
-
-            if ($selectedTherapist !== 'any') {
-                $selectedId = filter_var($selectedTherapist, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-                if (!is_int($selectedId) || !in_array($selectedId, $qualifiedIds, true)) {
-                    $selectedTherapist = 'any';
-                } else {
-                    $hasTherapistSelection = true;
-                }
-            }
-
-            $selectedDate = is_string($query['date'] ?? null) ? $query['date'] : '';
-            $selectedTime = is_string($query['time'] ?? null) ? $query['time'] : '';
-            $date = $this->parseDate($selectedDate);
-            $dateError = null;
-            $timeError = null;
-            $selectedSlot = null;
-            $slots = [];
-            $therapistStates = [];
-
-            if ($selectedDate !== '' && $date === null) {
-                $dateError = 'Choose a valid date in YYYY-MM-DD format.';
-            } elseif ($date !== null && $date < $this->currentDate()) {
-                $dateError = 'Choose today or a future date.';
-            } elseif ($date !== null && $therapists !== [] && $hasTherapistSelection) {
-                $recurring = [];
-                $exceptions = [];
-                $blocking = [];
-                $dayStart = $date->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
-                $dayEnd = $date->modify('+1 day')->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
-
-                foreach ($therapists as $therapist) {
-                    $recurring[$therapist->id] = $this->availability->findAvailability(
-                        $therapist->id,
-                        (int) $date->format('N')
-                    );
-                    $exceptions[$therapist->id] = $this->availability->findAvailabilityExceptions(
-                        $therapist->id,
-                        $date->format('Y-m-d')
-                    );
-                    $blocking[$therapist->id] = $this->appointments->findOverlappingAppointments(
-                        $therapist->id,
-                        $dayStart,
-                        $dayEnd
-                    );
-                }
-
-                $therapistStates = $this->availabilityService->states(
-                    $date,
-                    $service->durationMinutes,
-                    $therapists,
-                    $recurring,
-                    $exceptions,
-                    $blocking
-                );
-                $candidateIds = $selectedTherapist === 'any'
-                    ? $qualifiedIds
-                    : [(int) $selectedTherapist];
-                $slots = $this->availabilityService->mergeStateSlots($therapistStates, $candidateIds);
-            }
-
-            if ($selectedTime !== '') {
-                if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $selectedTime) !== 1) {
-                    $timeError = 'Choose a valid time in HH:MM format.';
-                } else {
-                    foreach ($slots as $slot) {
-                        if ($slot->startsAt->format('H:i') === $selectedTime) {
-                            $selectedSlot = $slot;
-                            break;
-                        }
-                    }
-
-                    if ($selectedSlot === null) {
-                        $timeError = 'That time is not currently available. Choose one of the listed times.';
-                    }
-                }
-            }
-        } catch (Throwable) {
-            return $this->render('booking-entry', [
-                'title' => 'Booking unavailable',
-                'service' => null,
-                'therapists' => [],
-                'bookingError' => true,
-                'selectedTherapist' => 'any',
-                'selectedDate' => '',
-                'dateError' => null,
-                'slots' => [],
-                'selectedTime' => '',
-                'timeError' => null,
-                'selectedSlot' => null,
-                'hasTherapistSelection' => false,
-                'therapistStates' => [],
-            ], 503);
+        if ($service === null) {
+            return $this->notFound();
         }
 
-        return $this->render('booking-entry', [
+        $therapists = $this->therapists->findActiveQualifiedForService($id);
+        $requestedTherapist = is_string($input['therapist'] ?? null) ? $input['therapist'] : null;
+        $selectedTherapist = $requestedTherapist ?? 'any';
+        $hasTherapistSelection = $requestedTherapist === 'any' && $therapists !== [];
+        $qualifiedIds = array_map(static fn (Therapist $therapist): int => $therapist->id, $therapists);
+
+        if ($selectedTherapist !== 'any') {
+            $selectedId = filter_var($selectedTherapist, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if (!is_int($selectedId) || !in_array($selectedId, $qualifiedIds, true)) {
+                $selectedTherapist = 'any';
+            } else {
+                $hasTherapistSelection = true;
+            }
+        }
+
+        $selectedDate = is_string($input['date'] ?? null) ? $input['date'] : '';
+        $selectedTime = is_string($input['time'] ?? null) ? $input['time'] : '';
+        $date = $this->parseDate($selectedDate);
+        $dateError = null;
+        $timeError = null;
+        $selectedSlot = null;
+        $slots = [];
+        $therapistStates = [];
+
+        if ($selectedDate !== '' && $date === null) {
+            $dateError = 'Choose a valid date in YYYY-MM-DD format.';
+        } elseif ($date !== null && $date < $this->currentDate()) {
+            $dateError = 'Choose today or a future date.';
+        } elseif ($date !== null && $therapists !== [] && $hasTherapistSelection) {
+            $recurring = [];
+            $exceptions = [];
+            $blocking = [];
+            $dayStart = $date->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
+            $dayEnd = $date->modify('+1 day')->setTime(0, 0)->setTimezone(new DateTimeZone('UTC'));
+
+            foreach ($therapists as $therapist) {
+                $recurring[$therapist->id] = $this->availability->findAvailability(
+                    $therapist->id,
+                    (int) $date->format('N')
+                );
+                $exceptions[$therapist->id] = $this->availability->findAvailabilityExceptions(
+                    $therapist->id,
+                    $date->format('Y-m-d')
+                );
+                $blocking[$therapist->id] = $this->appointments->findOverlappingAppointments(
+                    $therapist->id,
+                    $dayStart,
+                    $dayEnd
+                );
+            }
+
+            $therapistStates = $this->availabilityService->states(
+                $date,
+                $service->durationMinutes,
+                $therapists,
+                $recurring,
+                $exceptions,
+                $blocking
+            );
+            $candidateIds = $selectedTherapist === 'any' ? $qualifiedIds : [(int) $selectedTherapist];
+            $slots = $this->availabilityService->mergeStateSlots($therapistStates, $candidateIds);
+        }
+
+        if ($selectedTime !== '') {
+            if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $selectedTime) !== 1) {
+                $timeError = 'Choose a valid time in HH:MM format.';
+            } else {
+                foreach ($slots as $slot) {
+                    if ($slot->startsAt->format('H:i') === $selectedTime) {
+                        $selectedSlot = $slot;
+                        break;
+                    }
+                }
+
+                if ($selectedSlot === null) {
+                    $timeError = 'That time is not currently available. Choose one of the listed times.';
+                }
+            }
+        }
+
+        return [
             'title' => 'Start booking: ' . $service->name,
             'service' => $service,
             'therapists' => $therapists,
@@ -160,7 +193,28 @@ final class BookingController extends Controller
             'selectedSlot' => $selectedSlot,
             'hasTherapistSelection' => $hasTherapistSelection,
             'therapistStates' => $therapistStates,
-        ]);
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array{name: string, email: string, phone: string, notes: string}|null $values
+     * @param array<string, string> $errors
+     * @return array<string, mixed>
+     */
+    private function withCustomerState(array $data, ?array $values = null, array $errors = []): array
+    {
+        $data['customer'] = $values ?? ['name' => '', 'email' => '', 'phone' => '', 'notes' => ''];
+        $data['formErrors'] = $errors;
+        $data['csrfToken'] = $this->csrf->token();
+        $data['reviewReady'] = false;
+
+        return $data;
+    }
+
+    private function failure(): Response
+    {
+        return $this->render('booking-entry', ['title' => 'Booking unavailable', 'bookingError' => true], 503);
     }
 
     private function parseDate(string $value): ?DateTimeImmutable
@@ -171,13 +225,9 @@ final class BookingController extends Controller
 
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, $this->timezone);
         $errors = DateTimeImmutable::getLastErrors();
+        $isValid = $errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0);
 
-        $isValid = $errors === false
-            || ($errors['warning_count'] === 0 && $errors['error_count'] === 0);
-
-        return $date !== false && $isValid
-            ? $date
-            : null;
+        return $date !== false && $isValid ? $date : null;
     }
 
     private function currentDate(): DateTimeImmutable

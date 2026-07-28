@@ -36,6 +36,12 @@ final class Router
     }
 
     /** @param callable(): Response $handler */
+    public function post(string $path, callable $handler): void
+    {
+        $this->add('POST', $path, $handler);
+    }
+
+    /** @param callable(): Response $handler */
     public function add(string $method, string $path, callable $handler): void
     {
         $method = strtoupper($method);

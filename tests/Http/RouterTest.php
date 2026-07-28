@@ -52,6 +52,14 @@ final class RouterTest extends TestCase
         self::assertSame('book-42', $response->body());
     }
 
+    public function testItMatchesAHttpPostBookingRoute(): void
+    {
+        $router = new Router();
+        $router->post('/book/{serviceId}', static fn (string $id): Response => new Response('review-' . $id));
+
+        self::assertSame('review-42', $router->dispatch('POST', '/book/42')->body());
+    }
+
     public function testUnknownPathsAndMethodsUseTheNotFoundResponse(): void
     {
         $router = new Router(static fn (): Response => new Response('missing', 404));

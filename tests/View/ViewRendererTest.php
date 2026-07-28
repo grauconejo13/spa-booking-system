@@ -99,6 +99,10 @@ final class ViewRendererTest extends TestCase
             'selectedSlot' => null,
             'hasTherapistSelection' => false,
             'therapistStates' => [],
+            'customer' => ['name' => '', 'email' => '', 'phone' => '', 'notes' => ''],
+            'formErrors' => [],
+            'csrfToken' => 'test-token',
+            'reviewReady' => false,
         ]);
 
         self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);
@@ -151,6 +155,10 @@ final class ViewRendererTest extends TestCase
             'selectedSlot' => null,
             'hasTherapistSelection' => true,
             'therapistStates' => $states,
+            'customer' => ['name' => '', 'email' => '', 'phone' => '', 'notes' => ''],
+            'formErrors' => [],
+            'csrfToken' => 'test-token',
+            'reviewReady' => false,
         ]);
 
         self::assertStringContainsString('<b>Not scheduled</b>', $html);

@@ -16,12 +16,17 @@ use SpaBooking\Repositories\ServiceCatalogRepository;
 use SpaBooking\Repositories\AppointmentScheduleRepository;
 use SpaBooking\Repositories\AvailabilityRepository;
 use SpaBooking\Repositories\TherapistCatalogRepository;
+use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AvailabilityService;
+use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\View\ViewRenderer;
 
 final class BookingControllerTest extends TestCase
 {
     private ViewRenderer $views;
+
+    /** @var array<string, mixed> */
+    private array $session = [];
 
     protected function setUp(): void
     {
@@ -86,8 +91,9 @@ final class BookingControllerTest extends TestCase
         self::assertSame(200, $response->status());
         self::assertMatchesRegularExpression('/name="time" value="09:30"\s+checked/', $response->body());
         self::assertStringContainsString('<span>3</span> Your Details', $response->body());
-        self::assertStringContainsString('Contact details will be collected in a later step.', $response->body());
-        self::assertStringNotContainsString('name="email"', $response->body());
+        self::assertStringContainsString('class="customer-details-form"', $response->body());
+        self::assertStringContainsString('name="email"', $response->body());
+        self::assertStringContainsString('name="_token"', $response->body());
     }
 
     public function testItRejectsMalformedAndUnavailableTimesWithoutShowingCustomerDetails(): void
@@ -145,6 +151,51 @@ final class BookingControllerTest extends TestCase
         self::assertStringContainsString('Choose today or a future date.', $past->body());
     }
 
+    public function testValidCustomerDetailsRenderTheNonPersistingReviewStep(): void
+    {
+        $controller = $this->controller($this->service(), [$this->therapist()]);
+        $token = (new CsrfTokenManager($this->session))->token();
+        $response = $controller->review('7', $this->validReviewInput($token));
+
+        self::assertSame(200, $response->status());
+        self::assertStringContainsString('aria-current="step"', $response->body());
+        self::assertStringContainsString('Your appointment has not been booked yet.', $response->body());
+        self::assertStringContainsString('Confirm booking — coming next', $response->body());
+        self::assertStringContainsString('Avery Reed', $response->body());
+        self::assertStringContainsString('Any available therapist', $response->body());
+        self::assertStringContainsString('data-booking-focus', $response->body());
+    }
+
+    public function testInvalidCustomerDetailsShowAccessibleErrorsAndPreserveSafeValues(): void
+    {
+        $controller = $this->controller($this->service(), [$this->therapist()]);
+        $token = (new CsrfTokenManager($this->session))->token();
+        $input = $this->validReviewInput($token);
+        $input['name'] = '  <b>A</b>  ';
+        $input['email'] = 'invalid';
+        $input['phone'] = '';
+        $input['notes'] = str_repeat('x', 1001);
+        $response = $controller->review('7', $input);
+
+        self::assertSame(422, $response->status());
+        self::assertStringContainsString('class="error-summary"', $response->body());
+        self::assertStringContainsString('aria-invalid="true"', $response->body());
+        self::assertStringContainsString('value="&lt;b&gt;A&lt;/b&gt;"', $response->body());
+        self::assertStringNotContainsString('value="<b>A</b>"', $response->body());
+        self::assertStringContainsString('data-booking-focus', $response->body());
+    }
+
+    public function testInvalidCsrfTokenIsRejectedSafely(): void
+    {
+        $controller = $this->controller($this->service(), [$this->therapist()]);
+        (new CsrfTokenManager($this->session))->token();
+        $response = $controller->review('7', $this->validReviewInput('invalid'));
+
+        self::assertSame(419, $response->status());
+        self::assertStringContainsString('Your session check failed.', $response->body());
+        self::assertStringNotContainsString('Your appointment has not been booked yet.', $response->body());
+    }
+
     public function testItReturnsNotFoundForAnInvalidServiceId(): void
     {
         $response = $this->controller($this->service(), [])->start('invalid');
@@ -183,6 +234,8 @@ final class BookingControllerTest extends TestCase
             $this->appointmentRepository(),
             new AvailabilityService(),
             new DateTimeZone('America/Chicago'),
+            new CsrfTokenManager($this->session),
+            new CustomerDetailsValidator(),
             new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         ))->start('7');
 
@@ -220,6 +273,8 @@ final class BookingControllerTest extends TestCase
             $this->appointmentRepository(),
             new AvailabilityService(),
             new DateTimeZone('America/Chicago'),
+            new CsrfTokenManager($this->session),
+            new CustomerDetailsValidator(),
             new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         );
     }
@@ -276,5 +331,20 @@ final class BookingControllerTest extends TestCase
     private function therapist(): Therapist
     {
         return new Therapist(3, 'Mara Vale', 'mara-vale', 'Restorative facial specialist.', true, 1);
+    }
+
+    /** @return array<string, string> */
+    private function validReviewInput(string $token): array
+    {
+        return [
+            '_token' => $token,
+            'therapist' => 'any',
+            'date' => '2030-06-03',
+            'time' => '09:00',
+            'name' => ' Avery Reed ',
+            'email' => 'avery@example.test',
+            'phone' => '555-0102',
+            'notes' => 'Quiet room, please.',
+        ];
     }
 }
