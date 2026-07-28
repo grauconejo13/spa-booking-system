@@ -14,7 +14,9 @@ use SpaBooking\Repositories\ServiceCatalogRepository;
 use SpaBooking\Repositories\TherapistCatalogRepository;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AvailabilityService;
+use SpaBooking\Services\BookingDraftStore;
 use SpaBooking\Validation\CustomerDetailsValidator;
+use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\View\ViewRenderer;
 use Throwable;
 
@@ -30,6 +32,8 @@ final class BookingController extends Controller
         private readonly DateTimeZone $timezone,
         private readonly CsrfTokenManager $csrf,
         private readonly CustomerDetailsValidator $customerValidator,
+        private readonly TimeSelectionValidator $timeValidator,
+        private readonly BookingDraftStore $drafts,
         private readonly ?DateTimeImmutable $today = null
     ) {
         parent::__construct($views);
@@ -45,7 +49,10 @@ final class BookingController extends Controller
                 return $data;
             }
 
-            return $this->render('booking-entry', $this->withCustomerState($data));
+            $data = $this->withCustomerState($data, $this->drafts->get((int) $data['service']->id));
+            $data['activeStep'] = $this->resolveGetStep($query, $data);
+
+            return $this->render('booking-entry', $data);
         } catch (Throwable) {
             return $this->failure();
         }
@@ -62,18 +69,37 @@ final class BookingController extends Controller
             }
 
             $validation = $this->customerValidator->validate($input);
+            $this->drafts->put((int) $data['service']->id, $validation['values']);
             $data = $this->withCustomerState($data, $validation['values'], $validation['errors']);
 
             if (!$this->csrf->validate($input['_token'] ?? null)) {
                 $data['formErrors']['csrf'] = 'Your session check failed. Please try again.';
+                $data['activeStep'] = $data['selectedSlot'] !== null
+                    ? 'details'
+                    : ($data['hasTherapistSelection'] ? 'datetime' : 'therapist');
                 return $this->render('booking-entry', $data, 419);
             }
 
             if ($data['selectedSlot'] === null) {
-                $data['formErrors']['selection'] = 'Choose a currently available appointment time.';
+                $data['activeStep'] = $data['hasTherapistSelection'] ? 'datetime' : 'therapist';
+                return $this->render('booking-entry', $data, 422);
+            }
+
+            $requestedStep = is_string($input['step'] ?? null) ? $input['step'] : 'review';
+            if ($requestedStep === 'datetime') {
+                $data['formErrors'] = [];
+                $data['activeStep'] = 'datetime';
+                return $this->render('booking-entry', $data);
+            }
+
+            if ($requestedStep === 'details') {
+                $data['formErrors'] = [];
+                $data['activeStep'] = 'details';
+                return $this->render('booking-entry', $data);
             }
 
             $data['reviewReady'] = $data['formErrors'] === [];
+            $data['activeStep'] = $data['reviewReady'] ? 'review' : 'details';
 
             return $this->render('booking-entry', $data, $data['reviewReady'] ? 200 : 422);
         } catch (Throwable) {
@@ -162,22 +188,9 @@ final class BookingController extends Controller
             $slots = $this->availabilityService->mergeStateSlots($therapistStates, $candidateIds);
         }
 
-        if ($selectedTime !== '') {
-            if (preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $selectedTime) !== 1) {
-                $timeError = 'Choose a valid time in HH:MM format.';
-            } else {
-                foreach ($slots as $slot) {
-                    if ($slot->startsAt->format('H:i') === $selectedTime) {
-                        $selectedSlot = $slot;
-                        break;
-                    }
-                }
-
-                if ($selectedSlot === null) {
-                    $timeError = 'That time is not currently available. Choose one of the listed times.';
-                }
-            }
-        }
+        $timeValidation = $this->timeValidator->validate($selectedTime, $slots);
+        $selectedSlot = $timeValidation['slot'];
+        $timeError = $timeValidation['error'];
 
         return [
             'title' => 'Start booking: ' . $service->name,
@@ -210,6 +223,29 @@ final class BookingController extends Controller
         $data['reviewReady'] = false;
 
         return $data;
+    }
+
+    /**
+     * @param array<string, mixed> $query
+     * @param array<string, mixed> $data
+     */
+    private function resolveGetStep(array $query, array $data): string
+    {
+        $requested = is_string($query['step'] ?? null) ? $query['step'] : 'therapist';
+
+        if (!$data['hasTherapistSelection']) {
+            return 'therapist';
+        }
+
+        if ($requested === 'therapist') {
+            return 'therapist';
+        }
+
+        if ($data['selectedSlot'] === null) {
+            return 'datetime';
+        }
+
+        return $requested === 'details' || $requested === 'review' ? 'details' : 'datetime';
     }
 
     private function failure(): Response

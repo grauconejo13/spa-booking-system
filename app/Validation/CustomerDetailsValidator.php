@@ -20,28 +20,31 @@ final class CustomerDetailsValidator
             'notes' => $this->text($input['notes'] ?? null),
         ];
         $errors = [];
+        $nameLength = $this->length($values['name']);
+        $emailLength = $this->length($values['email']);
+        $phoneLength = $this->length($values['phone']);
+        $invalidNameLength = $nameLength < CustomerDetailsRules::NAME_MIN_LENGTH
+            || $nameLength > CustomerDetailsRules::NAME_MAX_LENGTH;
+        $invalidEmail = $emailLength > CustomerDetailsRules::EMAIL_MAX_LENGTH
+            || filter_var($values['email'], FILTER_VALIDATE_EMAIL) === false;
+        $invalidPhoneLength = $phoneLength < CustomerDetailsRules::PHONE_MIN_LENGTH
+            || $phoneLength > CustomerDetailsRules::PHONE_MAX_LENGTH;
 
         if ($values['name'] === '') {
             $errors['name'] = 'Enter your full name.';
-        } elseif ($this->length($values['name']) < CustomerDetailsRules::NAME_MIN_LENGTH
-            || $this->length($values['name']) > CustomerDetailsRules::NAME_MAX_LENGTH
-        ) {
+        } elseif ($invalidNameLength) {
             $errors['name'] = 'Full name must be between 2 and 120 characters.';
         }
 
         if ($values['email'] === '') {
             $errors['email'] = 'Enter your email address.';
-        } elseif ($this->length($values['email']) > CustomerDetailsRules::EMAIL_MAX_LENGTH
-            || filter_var($values['email'], FILTER_VALIDATE_EMAIL) === false
-        ) {
+        } elseif ($invalidEmail) {
             $errors['email'] = 'Enter a valid email address.';
         }
 
         if ($values['phone'] === '') {
             $errors['phone'] = 'Enter your phone number.';
-        } elseif ($this->length($values['phone']) < CustomerDetailsRules::PHONE_MIN_LENGTH
-            || $this->length($values['phone']) > CustomerDetailsRules::PHONE_MAX_LENGTH
-        ) {
+        } elseif ($invalidPhoneLength) {
             $errors['phone'] = 'Phone number must be between 7 and 32 characters.';
         }
 

@@ -12,6 +12,6 @@ if (toggle instanceof HTMLButtonElement && navigation instanceof HTMLElement) {
 
 const bookingFocusTarget = document.querySelector('[data-booking-focus]');
 
-if (bookingFocusTarget instanceof HTMLElement) {
+if (window.location.hash === '#booking-flow' && bookingFocusTarget instanceof HTMLElement) {
     bookingFocusTarget.focus({ preventScroll: false });
 }

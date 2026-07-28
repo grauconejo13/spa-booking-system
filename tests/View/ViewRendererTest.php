@@ -103,6 +103,7 @@ final class ViewRendererTest extends TestCase
             'formErrors' => [],
             'csrfToken' => 'test-token',
             'reviewReady' => false,
+            'activeStep' => 'therapist',
         ]);
 
         self::assertStringContainsString('&lt;script&gt;Facial&lt;/script&gt;', $html);
@@ -159,12 +160,13 @@ final class ViewRendererTest extends TestCase
             'formErrors' => [],
             'csrfToken' => 'test-token',
             'reviewReady' => false,
+            'activeStep' => 'therapist',
         ]);
 
         self::assertStringContainsString('<b>Not scheduled</b>', $html);
         self::assertStringContainsString('<b>Fully booked</b>', $html);
         self::assertStringContainsString('<b>Unavailable</b>', $html);
         self::assertStringContainsString('disabled aria-describedby="therapist-status-1"', $html);
-        self::assertStringContainsString('No therapists are available on this date.', $html);
+        self::assertSame(1, substr_count($html, 'class="wizard-panel"'));
     }
 }

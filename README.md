@@ -18,7 +18,9 @@ Phases 1 and 2 provide the framework-free HTTP foundation, therapist-aware MySQL
 data, and focused PDO repositories. Phase 3 now loads the public services catalogue and service details,
 including qualified therapists, from MySQL. A read-only booking entry presents therapist preferences;
 date and time-slot selection now use a progressive, position-preserving flow with visible therapist
-availability states. Customer details, review, and appointment submission remain planned.
+availability states. A horizontal, server-rendered wizard validates customer details into a CSRF-protected,
+non-persisting review while preserving backward navigation;
+appointment submission remains planned.
 
 ## Technology stack
 

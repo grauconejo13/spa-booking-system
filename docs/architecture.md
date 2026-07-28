@@ -56,6 +56,12 @@ Routes are declared explicitly in `routes/web.php`, grouped conceptually into pu
 - Expected validation failures return field-level feedback and preserve safe input.
 - Unexpected failures are handled centrally by the front controller.
 
+The booking route supports GET previews and a POST-only customer-details validation boundary. The POST
+uses a session-backed CSRF token, recalculates the selected time from repository schedule data, and
+renders a non-persisting review state. Customer contact values remain in the request body and are never
+placed in redirect or query parameters. An explicit step value requests wizard navigation, while the
+controller remains authoritative: each transition is reduced to the latest step whose prerequisites are valid.
+
 ## Architectural decisions
 
 ### ADR-001: Framework-free, MVC-inspired structure

@@ -16,7 +16,9 @@ use SpaBooking\Repositories\TherapistRepository;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\InMemoryServiceCatalog;
 use SpaBooking\Validation\CustomerDetailsValidator;
+use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\Services\AvailabilityService;
+use SpaBooking\Services\BookingDraftStore;
 use SpaBooking\View\ViewRenderer;
 
 $root = dirname(__DIR__);
@@ -74,7 +76,13 @@ try {
     /** @var array<string, mixed> $session */
     $session =& $_SESSION;
     $csrf = new CsrfTokenManager($session);
-    $bookingController = static function () use ($appConfig, $csrf, $databaseConfig, $views): BookingController {
+    $bookingController = static function () use (
+        $appConfig,
+        $csrf,
+        $databaseConfig,
+        $views,
+        &$session
+    ): BookingController {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
         $therapists = new TherapistRepository($pdo);
 
@@ -87,7 +95,9 @@ try {
             new AvailabilityService(),
             new DateTimeZone($appConfig['timezone']),
             $csrf,
-            new CustomerDetailsValidator()
+            new CustomerDetailsValidator(),
+            new TimeSelectionValidator(),
+            new BookingDraftStore($session)
         );
     };
     $bookingEntry = static fn (string $serviceId): Response =>

@@ -10,16 +10,18 @@
 4. Server previews 30-minute-interval start times using recurring hours, date exceptions, service
    duration, and pending or confirmed appointments. "Any" results merge identical starts without
    assigning a therapist.
-5. The page shows progress through Therapist, Date & Time, Your Details, and Review. Selection forms
-   return to `#booking-flow`, and each therapist remains visible with an available, not scheduled,
-   fully booked, unavailable, or date-not-yet-chosen state.
+5. A horizontal progress track shows Therapist, Date & Time, Your Details, and Review while only the
+   server-validated active panel is rendered. Selection forms return to `#booking-flow`; unavailable
+   therapists remain visible with an available, not scheduled, fully booked, or closed state.
 6. Visitor selects a freshly calculated time. The server rejects malformed or unavailable values and
-   retains every candidate therapist for an "any" selection without assigning one. Customer details
-   and review remain visibly marked as later steps.
-7. Visitor reviews the request and submits a CSRF-protected form.
-8. Server normalizes and validates all fields, reloads the service and therapist choice, and rechecks availability.
-9. Within a transaction, the server locks/rechecks a qualified therapist, assigns that therapist (deterministically when "any" was chosen), prevents a per-therapist collision, and creates a `pending` appointment with snapshot values and a random reference.
-10. Visitor sees a confirmation page with the appointment summary, assigned therapist, and reference, but no sensitive data in the URL.
+   retains every candidate therapist for an "any" selection without assigning one.
+7. Visitor submits name, email, phone, and optional notes through a CSRF-protected POST. The server
+   recalculates availability, trims and validates the values, and renders accessible inline errors or
+   a review summary. Back navigation uses a session draft, so customer details never enter the URL.
+8. The review state clearly says the appointment is not booked; final submission remains unavailable.
+9. In a later step, the server will revalidate all fields and availability transactionally.
+10. The future persistence step will assign a therapist, prevent collisions, and create a pending appointment.
+11. Visitor will then see a confirmation page with a reference but no sensitive data in the URL.
 
 Failure paths:
 

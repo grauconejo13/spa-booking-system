@@ -18,7 +18,9 @@ use SpaBooking\Repositories\AvailabilityRepository;
 use SpaBooking\Repositories\TherapistCatalogRepository;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AvailabilityService;
+use SpaBooking\Services\BookingDraftStore;
 use SpaBooking\Validation\CustomerDetailsValidator;
+use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\View\ViewRenderer;
 
 final class BookingControllerTest extends TestCase
@@ -44,8 +46,8 @@ final class BookingControllerTest extends TestCase
         self::assertStringContainsString('$86.50', $response->body());
         self::assertStringContainsString('Back to service details', $response->body());
         self::assertStringContainsString('aria-current="step"', $response->body());
-        self::assertStringContainsString('<span>1</span> Therapist', $response->body());
-        self::assertStringContainsString('Choose a therapist preference to continue.', $response->body());
+        self::assertStringContainsString('<span>1</span><b>Therapist</b>', $response->body());
+        self::assertStringContainsString('aria-disabled="true"', $response->body());
         self::assertStringNotContainsString('#booking-flow', strstr($response->body(), '<header', true));
     }
 
@@ -70,27 +72,31 @@ final class BookingControllerTest extends TestCase
     public function testItAcceptsAValidDateAndPreservesTherapistSelection(): void
     {
         $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'step' => 'datetime',
             'therapist' => '3',
             'date' => '2030-06-03',
         ]);
 
         self::assertSame(200, $response->status());
         self::assertStringContainsString('value="2030-06-03"', $response->body());
-        self::assertMatchesRegularExpression('/value="3"\s+checked/', $response->body());
+        self::assertStringContainsString('value="3"', $response->body());
+        self::assertStringContainsString('Therapist preference:</strong>', $response->body());
         self::assertStringContainsString('name="time"', $response->body());
     }
 
     public function testItRendersSelectableSlotsAndPreservesAValidSelectedTime(): void
     {
         $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'step' => 'details',
             'therapist' => '3',
             'date' => '2030-06-03',
             'time' => '09:30',
         ]);
 
         self::assertSame(200, $response->status());
-        self::assertMatchesRegularExpression('/name="time" value="09:30"\s+checked/', $response->body());
-        self::assertStringContainsString('<span>3</span> Your Details', $response->body());
+        self::assertStringContainsString('name="time"', $response->body());
+        self::assertStringContainsString('value="09:30"', $response->body());
+        self::assertStringContainsString('<span>3</span><b>Your Details</b>', $response->body());
         self::assertStringContainsString('class="customer-details-form"', $response->body());
         self::assertStringContainsString('name="email"', $response->body());
         self::assertStringContainsString('name="_token"', $response->body());
@@ -99,7 +105,7 @@ final class BookingControllerTest extends TestCase
     public function testItRejectsMalformedAndUnavailableTimesWithoutShowingCustomerDetails(): void
     {
         $controller = $this->controller($this->service(), [$this->therapist()]);
-        $query = ['therapist' => '3', 'date' => '2030-06-03'];
+        $query = ['step' => 'details', 'therapist' => '3', 'date' => '2030-06-03'];
         $malformed = $controller->start('7', $query + ['time' => '9:30']);
         $unavailable = $controller->start('7', $query + ['time' => '17:00']);
 
@@ -113,18 +119,21 @@ final class BookingControllerTest extends TestCase
     {
         $second = new Therapist(4, 'Theo Linden', 'theo-linden', 'Massage specialist.', true, 2);
         $response = $this->controller($this->service(), [$this->therapist(), $second])->start('7', [
+            'step' => 'details',
             'therapist' => 'any',
             'date' => '2030-06-03',
             'time' => '09:00',
         ]);
 
-        self::assertStringContainsString('<b>Available</b>', $response->body());
-        self::assertStringContainsString('name="time" value="09:00"', $response->body());
+        self::assertStringContainsString('value="any"', $response->body());
+        self::assertStringContainsString('name="time"', $response->body());
+        self::assertStringContainsString('value="09:00"', $response->body());
     }
 
     public function testItRendersProgressAndFragmentActionsAfterTherapistSelection(): void
     {
         $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'step' => 'details',
             'therapist' => 'any',
             'date' => '2030-06-03',
             'time' => '09:00',
@@ -136,13 +145,63 @@ final class BookingControllerTest extends TestCase
         self::assertStringContainsString('id="booking-flow"', $response->body());
     }
 
+    public function testOnlyTheValidatedActiveStepPanelIsRendered(): void
+    {
+        $controller = $this->controller($this->service(), [$this->therapist()]);
+        $initial = $controller->start('7', ['step' => 'datetime']);
+        $dateTime = $controller->start('7', ['step' => 'datetime', 'therapist' => 'any']);
+        $blockedDetails = $controller->start('7', ['step' => 'details', 'therapist' => 'any']);
+
+        self::assertStringContainsString('id="therapist-heading"', $initial->body());
+        self::assertStringContainsString('id="datetime-heading"', $dateTime->body());
+        self::assertStringContainsString('id="datetime-heading"', $blockedDetails->body());
+        self::assertSame(1, substr_count($dateTime->body(), 'class="wizard-panel"'));
+        self::assertStringNotContainsString('id="details-heading"', $dateTime->body());
+    }
+
+    public function testWizardUsesOneForwardActionAndNeverPlacesCustomerDetailsInUrls(): void
+    {
+        $response = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'step' => 'details',
+            'therapist' => 'any',
+            'date' => '2030-06-03',
+            'time' => '09:00',
+        ]);
+
+        self::assertSame(1, substr_count($response->body(), 'Review booking</button>'));
+        self::assertStringContainsString('action="/book/7#booking-flow"', $response->body());
+        self::assertStringNotContainsString('?name=', $response->body());
+        self::assertStringNotContainsString('&amp;email=', $response->body());
+    }
+
+    public function testBackNavigationPreservesCustomerDraftValues(): void
+    {
+        $controller = $this->controller($this->service(), [$this->therapist()]);
+        $token = (new CsrfTokenManager($this->session))->token();
+        $input = $this->validReviewInput($token);
+        $input['step'] = 'datetime';
+        $input['name'] = 'Avery Preserved';
+        $controller->review('7', $input);
+
+        $response = $controller->start('7', [
+            'step' => 'details',
+            'therapist' => 'any',
+            'date' => '2030-06-03',
+            'time' => '09:00',
+        ]);
+
+        self::assertStringContainsString('value="Avery Preserved"', $response->body());
+    }
+
     public function testItRejectsInvalidAndPastDates(): void
     {
         $invalid = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'step' => 'datetime',
             'therapist' => 'any',
             'date' => '06/03/2030',
         ]);
         $past = $this->controller($this->service(), [$this->therapist()])->start('7', [
+            'step' => 'datetime',
             'therapist' => 'any',
             'date' => '2030-05-31',
         ]);
@@ -236,6 +295,8 @@ final class BookingControllerTest extends TestCase
             new DateTimeZone('America/Chicago'),
             new CsrfTokenManager($this->session),
             new CustomerDetailsValidator(),
+            new TimeSelectionValidator(),
+            new BookingDraftStore($this->session),
             new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         ))->start('7');
 
@@ -275,6 +336,8 @@ final class BookingControllerTest extends TestCase
             new DateTimeZone('America/Chicago'),
             new CsrfTokenManager($this->session),
             new CustomerDetailsValidator(),
+            new TimeSelectionValidator(),
+            new BookingDraftStore($this->session),
             new DateTimeImmutable('2030-06-01', new DateTimeZone('America/Chicago'))
         );
     }
