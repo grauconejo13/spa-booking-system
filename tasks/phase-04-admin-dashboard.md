@@ -7,13 +7,13 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 ## Tasks
 
 - [x] Seed one fictional admin with a securely generated password hash.
-- [ ] Implement sign-in, sign-out, secure session settings, timeout, and session regeneration.
+- [x] Implement sign-in, sign-out, secure session settings, timeout, and session regeneration.
 - [ ] Add login throttling/backoff appropriate to the demo deployment.
-- [ ] Protect every admin route server-side.
+- [x] Protect every admin route server-side.
 - [ ] Build an upcoming appointment dashboard showing the assigned therapist, with date/status filters and pagination if needed.
 - [ ] Build an appointment detail view with minimally necessary customer information.
 - [ ] Enforce allowed status transitions in a service.
-- [ ] Protect all mutations and sign-out with CSRF tokens.
+- [ ] Protect all admin mutations with CSRF tokens. Sign-out is already CSRF-protected.
 - [ ] Add authentication, authorization, filtering, and transition tests.
 - [ ] Replace the README demo credential placeholder with fictional credentials and handling notes.
 
