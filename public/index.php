@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use SpaBooking\Config\Environment;
+use SpaBooking\Controllers\AdminController;
 use SpaBooking\Controllers\BookingController;
 use SpaBooking\Controllers\BookingConfirmationController;
 use SpaBooking\Controllers\BookingSubmissionController;
@@ -12,19 +13,23 @@ use SpaBooking\Database\PdoConnectionFactory;
 use SpaBooking\Http\ErrorHandler;
 use SpaBooking\Http\Response;
 use SpaBooking\Http\Router;
+use SpaBooking\Repositories\AdminAppointmentRepository;
+use SpaBooking\Repositories\AdminUserRepository;
 use SpaBooking\Repositories\AppointmentRepository;
 use SpaBooking\Repositories\ServiceRepository;
 use SpaBooking\Repositories\TherapistRepository;
+use SpaBooking\Security\AdminSession;
 use SpaBooking\Security\CsrfTokenManager;
-use SpaBooking\Services\InMemoryServiceCatalog;
-use SpaBooking\Validation\CustomerDetailsValidator;
-use SpaBooking\Validation\TimeSelectionValidator;
+use SpaBooking\Services\AdminAuthService;
 use SpaBooking\Services\AvailabilityService;
 use SpaBooking\Services\BookingDraftStore;
 use SpaBooking\Services\BookingReferenceGenerator;
 use SpaBooking\Services\BookingService;
 use SpaBooking\Services\BookingSubmissionStore;
+use SpaBooking\Services\InMemoryServiceCatalog;
 use SpaBooking\Services\TherapistAssignmentService;
+use SpaBooking\Validation\CustomerDetailsValidator;
+use SpaBooking\Validation\TimeSelectionValidator;
 use SpaBooking\View\ViewRenderer;
 
 $root = dirname(__DIR__);
@@ -67,33 +72,21 @@ try {
     $home = new HomeController($views, new InMemoryServiceCatalog());
     $services = static function () use ($databaseConfig, $views): Response {
         $repository = new ServiceRepository((new PdoConnectionFactory($databaseConfig))->create());
-
         return (new ServicesController($views, $repository))->index();
     };
     $serviceDetail = static function (string $id) use ($databaseConfig, $views): Response {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
-
-        return (new ServicesController(
-            $views,
-            new ServiceRepository($pdo),
-            new TherapistRepository($pdo)
-        ))->show($id);
+        return (new ServicesController($views, new ServiceRepository($pdo), new TherapistRepository($pdo)))->show($id);
     };
+
     /** @var array<string, mixed> $session */
     $session =& $_SESSION;
     $csrf = new CsrfTokenManager($session);
     $submissions = new BookingSubmissionStore($session);
-    $bookingController = static function () use (
-        $appConfig,
-        $csrf,
-        $databaseConfig,
-        $views,
-        $submissions,
-        &$session
-    ): BookingController {
+
+    $bookingController = static function () use ($appConfig, $csrf, $databaseConfig, $views, $submissions, &$session): BookingController {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
         $therapists = new TherapistRepository($pdo);
-
         return new BookingController(
             $views,
             new ServiceRepository($pdo),
@@ -109,16 +102,10 @@ try {
             $submissions
         );
     };
-    $bookingEntry = static fn (string $serviceId): Response =>
-        $bookingController()->start($serviceId, $_GET);
-    $bookingReview = static fn (string $serviceId): Response =>
-        $bookingController()->review($serviceId, $_POST);
-    $bookingConfirm = static function (string $serviceId) use (
-        $appConfig,
-        $csrf,
-        $databaseConfig,
-        $submissions
-    ): Response {
+
+    $bookingEntry = static fn (string $serviceId): Response => $bookingController()->start($serviceId, $_GET);
+    $bookingReview = static fn (string $serviceId): Response => $bookingController()->review($serviceId, $_POST);
+    $bookingConfirm = static function (string $serviceId) use ($appConfig, $csrf, $databaseConfig, $submissions): Response {
         $pdo = (new PdoConnectionFactory($databaseConfig))->create();
         $therapists = new TherapistRepository($pdo);
         $appointments = new AppointmentRepository($pdo);
@@ -132,37 +119,35 @@ try {
             new BookingReferenceGenerator(),
             new DateTimeZone($appConfig['timezone'])
         );
-
-        return (new BookingSubmissionController(
-            $csrf,
-            new CustomerDetailsValidator(),
-            $bookings,
-            $submissions
-        ))->confirm($serviceId, $_POST);
+        return (new BookingSubmissionController($csrf, new CustomerDetailsValidator(), $bookings, $submissions))
+            ->confirm($serviceId, $_POST);
     };
-    $bookingConfirmation = static function (string $reference) use (
-        $appConfig,
-        $databaseConfig,
-        $views
-    ): Response {
+    $bookingConfirmation = static function (string $reference) use ($appConfig, $databaseConfig, $views): Response {
         $repository = new AppointmentRepository((new PdoConnectionFactory($databaseConfig))->create());
-
-        return (new BookingConfirmationController(
-            $views,
-            $repository,
-            new DateTimeZone($appConfig['timezone'])
-        ))->show($reference);
+        return (new BookingConfirmationController($views, $repository, new DateTimeZone($appConfig['timezone'])))->show($reference);
     };
+
+    $adminController = static function () use ($databaseConfig, $views, $csrf, &$session): AdminController {
+        $pdo = (new PdoConnectionFactory($databaseConfig))->create();
+        $adminSession = new AdminSession($session);
+        return new AdminController(
+            $views,
+            new AdminAuthService(new AdminUserRepository($pdo), $adminSession),
+            $adminSession,
+            $csrf,
+            new AdminAppointmentRepository($pdo)
+        );
+    };
+
+    $adminLoginForm = static fn (): Response => $adminController()->loginForm();
+    $adminLogin = static fn (): Response => $adminController()->login($_POST);
+    $adminDashboard = static fn (): Response => $adminController()->dashboard();
+    $adminLogout = static fn (): Response => $adminController()->logout($_POST);
+
     $router = new Router(
-        static fn (): Response => new Response(
-            $views->render('errors/404', ['title' => 'Page not found']),
-            404
-        )
+        static fn (): Response => new Response($views->render('errors/404', ['title' => 'Page not found']), 404)
     );
 
-    /** @var callable(Router, HomeController, callable(): Response, callable(string): Response,
-     *     callable(string): Response, callable(string): Response, callable(string): Response,
-     *     callable(string): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
     $registerRoutes(
         $router,
@@ -172,7 +157,11 @@ try {
         $bookingEntry,
         $bookingReview,
         $bookingConfirm,
-        $bookingConfirmation
+        $bookingConfirmation,
+        $adminLoginForm,
+        $adminLogin,
+        $adminDashboard,
+        $adminLogout
     );
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
