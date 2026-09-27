@@ -13,6 +13,13 @@ use SpaBooking\View\ViewRenderer;
 
 final class AdminController
 {
+    private const array APPOINTMENT_STATUSES = [
+        'pending',
+        'confirmed',
+        'completed',
+        'cancelled',
+    ];
+
     public function __construct(
         private readonly ViewRenderer $views,
         private readonly AdminAuthService $auth,
@@ -57,17 +64,25 @@ final class AdminController
         return $this->redirect('/admin');
     }
 
-    public function dashboard(): Response
+    /** @param array<string, mixed> $query */
+    public function dashboard(array $query = []): Response
     {
         $admin = $this->session->current();
         if ($admin === null) {
             return $this->redirect('/admin/login');
         }
 
+        $requestedStatus = strtolower(trim((string) ($query['status'] ?? '')));
+        $selectedStatus = in_array($requestedStatus, self::APPOINTMENT_STATUSES, true)
+            ? $requestedStatus
+            : '';
+
         return new Response($this->views->render('admin/dashboard', [
             'title' => 'Admin dashboard',
             'admin' => $admin,
-            'appointments' => $this->appointments->upcoming(),
+            'appointments' => $this->appointments->upcoming($selectedStatus !== '' ? $selectedStatus : null),
+            'selectedStatus' => $selectedStatus,
+            'statusOptions' => self::APPOINTMENT_STATUSES,
             'csrfToken' => $this->csrf->token(),
         ]));
     }

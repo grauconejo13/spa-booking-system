@@ -13,19 +13,28 @@ final class AdminAppointmentRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function upcoming(int $limit = 25): array
+    public function upcoming(?string $status = null, int $limit = 25): array
     {
         $limit = max(1, min($limit, 100));
-        $statement = $this->pdo->prepare(
+        $sql =
             'SELECT a.id, a.reference, a.service_name, a.customer_name, a.starts_at, a.ends_at,
                     a.status, a.price_cents, t.name AS therapist_name
              FROM appointments a
              INNER JOIN therapists t ON t.id = a.therapist_id
-             WHERE a.starts_at >= UTC_TIMESTAMP()
-             ORDER BY a.starts_at ASC, a.id ASC
-             LIMIT :limit'
-        );
+             WHERE a.starts_at >= UTC_TIMESTAMP()';
+
+        if ($status !== null) {
+            $sql .= ' AND a.status = :status';
+        }
+
+        $sql .= ' ORDER BY a.starts_at ASC, a.id ASC LIMIT :limit';
+
+        $statement = $this->pdo->prepare($sql);
         assert($statement !== false);
+
+        if ($status !== null) {
+            $statement->bindValue('status', $status);
+        }
         $statement->bindValue('limit', $limit, PDO::PARAM_INT);
         $statement->execute();
 

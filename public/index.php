@@ -141,7 +141,7 @@ try {
 
     $adminLoginForm = static fn (): Response => $adminController()->loginForm();
     $adminLogin = static fn (): Response => $adminController()->login($_POST);
-    $adminDashboard = static fn (): Response => $adminController()->dashboard();
+    $adminDashboard = static fn (): Response => $adminController()->dashboard($_GET);
     $adminLogout = static fn (): Response => $adminController()->logout($_POST);
 
     $router = new Router(

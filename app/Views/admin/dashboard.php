@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 /** @var array{id: int, name: string, email: string} $admin */
 /** @var list<array<string, mixed>> $appointments */
+/** @var list<string> $statusOptions */
 ?>
 <section class="section-shell admin-dashboard-shell">
     <div class="container">
@@ -19,10 +20,37 @@ declare(strict_types=1);
             </form>
         </div>
 
+        <form method="get" action="/admin" class="admin-filter-form" aria-label="Filter appointments">
+            <div class="form-field">
+                <label for="status-filter">Status</label>
+                <select id="status-filter" name="status">
+                    <option value="">All upcoming appointments</option>
+                    <?php foreach ($statusOptions as $status): ?>
+                        <option
+                            value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>"
+                            <?= $selectedStatus === $status ? 'selected' : '' ?>
+                        >
+                            <?= htmlspecialchars(ucfirst($status), ENT_QUOTES, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="detail-actions">
+                <button class="button" type="submit">Apply filter</button>
+                <?php if ($selectedStatus !== ''): ?>
+                    <a class="button button-secondary" href="/admin">Clear</a>
+                <?php endif; ?>
+            </div>
+        </form>
+
         <?php if ($appointments === []): ?>
             <div class="admin-empty-state">
-                <h2>No upcoming appointments</h2>
-                <p>The booking queue is clear for now.</p>
+                <h2>No matching appointments</h2>
+                <p>
+                    <?= $selectedStatus === ''
+                        ? 'The booking queue is clear for now.'
+                        : 'There are no upcoming appointments with this status.' ?>
+                </p>
             </div>
         <?php else: ?>
             <div class="admin-table-wrap">
