@@ -43,6 +43,14 @@ declare(strict_types=1);
             </div>
         </form>
 
+        <p class="admin-results-summary" aria-live="polite">
+            Showing <?= count($appointments) ?>
+            <?= count($appointments) === 1 ? 'appointment' : 'appointments' ?>
+            <?= $selectedStatus !== ''
+                ? 'with status ' . htmlspecialchars($selectedStatus, ENT_QUOTES, 'UTF-8')
+                : 'across all statuses' ?>.
+        </p>
+
         <?php if ($appointments === []): ?>
             <div class="admin-empty-state">
                 <h2>No matching appointments</h2>
