@@ -13,7 +13,11 @@ return static function (
     callable $bookingEntry,
     callable $bookingReview,
     callable $bookingConfirm,
-    callable $bookingConfirmation
+    callable $bookingConfirmation,
+    callable $adminLoginForm,
+    callable $adminLogin,
+    callable $adminDashboard,
+    callable $adminLogout
 ): void {
     $router->get('/', [$home, 'index']);
     $router->get('/services', $services);
@@ -22,4 +26,9 @@ return static function (
     $router->post('/book/{serviceId}', $bookingReview);
     $router->post('/book/{serviceId}/confirm', $bookingConfirm);
     $router->get('/booking/confirmation/{reference}', $bookingConfirmation);
+
+    $router->get('/admin/login', $adminLoginForm);
+    $router->post('/admin/login', $adminLogin);
+    $router->get('/admin', $adminDashboard);
+    $router->post('/admin/logout', $adminLogout);
 };

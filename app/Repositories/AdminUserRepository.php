@@ -31,4 +31,14 @@ final class AdminUserRepository
             (bool) $row['is_active']
         ) : null;
     }
+
+    public function markLogin(int $adminId): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE admin_users SET last_login_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
+             WHERE id = :id'
+        );
+        assert($statement !== false);
+        $statement->execute(['id' => $adminId]);
+    }
 }
