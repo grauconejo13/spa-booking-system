@@ -32,6 +32,10 @@ $pageTitle = isset($title) ? (string) $title . ' | Willow & Still Spa' : 'Willow
             </nav>
         </div>
     </header>
+    <aside class="container availability-message" aria-label="Demo environment notice">
+        <strong>Demo mode</strong>
+        <p>This is a fictional spa booking system for demonstration purposes. Please use sample contact information when testing the booking flow.</p>
+    </aside>
     <main id="main-content">
         <?= $content ?>
     </main>
