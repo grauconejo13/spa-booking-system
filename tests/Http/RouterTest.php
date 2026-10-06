@@ -22,6 +22,17 @@ final class RouterTest extends TestCase
         self::assertSame('services', $response->body());
     }
 
+    public function testItNormalizesHttpMethodsCaseInsensitively(): void
+    {
+        $router = new Router();
+        $router->get('/services', static fn (): Response => new Response('services'));
+
+        $response = $router->dispatch('get', '/services');
+
+        self::assertSame(200, $response->status());
+        self::assertSame('services', $response->body());
+    }
+
     public function testItNormalizesTrailingSlashes(): void
     {
         $router = new Router();
