@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use SpaBooking\Config\Environment;
+use SpaBooking\Controllers\AdminAuthController;
+use SpaBooking\Controllers\AdminDashboardController;
 use SpaBooking\Controllers\BookingController;
 use SpaBooking\Controllers\BookingConfirmationController;
 use SpaBooking\Controllers\BookingSubmissionController;
@@ -12,10 +14,13 @@ use SpaBooking\Database\PdoConnectionFactory;
 use SpaBooking\Http\ErrorHandler;
 use SpaBooking\Http\Response;
 use SpaBooking\Http\Router;
+use SpaBooking\Repositories\AdminUserRepository;
 use SpaBooking\Repositories\AppointmentRepository;
 use SpaBooking\Repositories\ServiceRepository;
 use SpaBooking\Repositories\TherapistRepository;
+use SpaBooking\Security\AdminSession;
 use SpaBooking\Security\CsrfTokenManager;
+use SpaBooking\Services\AdminAuthService;
 use SpaBooking\Services\InMemoryServiceCatalog;
 use SpaBooking\Validation\CustomerDetailsValidator;
 use SpaBooking\Validation\TimeSelectionValidator;
@@ -153,6 +158,44 @@ try {
             new DateTimeZone($appConfig['timezone'])
         ))->show($reference);
     };
+    $adminSession = new AdminSession($session);
+    $adminAuthController = static function () use (
+        $databaseConfig,
+        $views,
+        $adminSession,
+        $csrf
+    ): AdminAuthController {
+        $repository = new AdminUserRepository((new PdoConnectionFactory($databaseConfig))->create());
+
+        return new AdminAuthController(
+            $views,
+            new AdminAuthService($repository),
+            $adminSession,
+            $csrf
+        );
+    };
+    $adminLoginForm = static function () use ($adminSession, $adminAuthController): Response {
+        if ($adminSession->isAuthenticated(time())) {
+            return new Response('', 303, ['Location' => '/admin']);
+        }
+
+        return $adminAuthController()->loginForm();
+    };
+    $adminLogin = static fn (): Response => $adminAuthController()->login($_POST);
+    $adminDashboard = static function () use ($views, $adminSession, $csrf): Response {
+        if (!$adminSession->isAuthenticated(time())) {
+            return new Response('', 303, ['Location' => '/admin/login']);
+        }
+
+        return (new AdminDashboardController($views, $adminSession, $csrf))->index();
+    };
+    $adminLogout = static function () use ($adminSession, $adminAuthController): Response {
+        if (!$adminSession->isAuthenticated(time())) {
+            return new Response('', 303, ['Location' => '/admin/login']);
+        }
+
+        return $adminAuthController()->logout($_POST);
+    };
     $router = new Router(
         static fn (): Response => new Response(
             $views->render('errors/404', ['title' => 'Page not found']),
@@ -162,7 +205,8 @@ try {
 
     /** @var callable(Router, HomeController, callable(): Response, callable(string): Response,
      *     callable(string): Response, callable(string): Response, callable(string): Response,
-     *     callable(string): Response): void $registerRoutes */
+     *     callable(string): Response, callable(): Response, callable(): Response,
+     *     callable(): Response, callable(): Response): void $registerRoutes */
     $registerRoutes = require $root . '/routes/web.php';
     $registerRoutes(
         $router,
@@ -172,7 +216,11 @@ try {
         $bookingEntry,
         $bookingReview,
         $bookingConfirm,
-        $bookingConfirmation
+        $bookingConfirmation,
+        $adminLoginForm,
+        $adminLogin,
+        $adminDashboard,
+        $adminLogout
     );
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';

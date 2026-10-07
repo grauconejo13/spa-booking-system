@@ -108,7 +108,7 @@ the three MySQL integration tests are skipped.
 
 ## Demo credentials
 
-The Phase 2 seed creates this fictional administrator for the future Phase 4 sign-in screen:
+The Phase 2 seed creates this fictional administrator for the Phase 4 demo sign-in screen at `/admin/login`:
 
 ```text
 Email:    admin@example.test
@@ -127,7 +127,7 @@ Screenshots will be added after the customer and admin interfaces exist.
 
 - [x] Phase 1: HTTP foundation, public informational pages, and planning
 - [x] Phase 2: therapist-aware database migrations, fictional seed data, and repositories
-- [ ] Phase 3: therapist-aware customer catalogue and booking flow
+- [x] Phase 3: therapist-aware customer catalogue and booking flow
 - [ ] Phase 4: admin authentication and appointment dashboard
 - [ ] Phase 5: automated testing, accessibility, security review, and polish
 

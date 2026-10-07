@@ -19,7 +19,7 @@ Controller -> PHP view -> HTML response
 ## Request lifecycle
 
 1. The web server sends all application requests to `public/index.php`.
-2. The front controller loads Composer, environment/configuration, shared dependencies, central error handling, and route declarations. Session/security middleware is added only when later phases require it.
+2. The front controller loads Composer, environment/configuration, shared dependencies, central error handling, and route declarations. Phase 4 adds a session-backed administrator authentication boundary with session-ID rotation, idle expiry, CSRF-protected sign-out, and server-side guards around admin routes.
 3. A minimal router matches HTTP method and path to a controller action.
 4. The controller reads request data, delegates validation/use cases, and selects a response or view.
 5. Services enforce business rules and coordinate repository calls and transactions.
