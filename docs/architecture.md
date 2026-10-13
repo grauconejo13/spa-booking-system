@@ -19,7 +19,7 @@ Controller -> PHP view -> HTML response
 ## Request lifecycle
 
 1. The web server sends all application requests to `public/index.php`.
-2. The front controller loads Composer, environment/configuration, shared dependencies, central error handling, and route declarations. Session/security middleware is added only when later phases require it.
+2. The front controller loads Composer, environment/configuration, shared dependencies, central error handling, and route declarations. Phase 4 adds a session-backed administrator authentication boundary with session-ID rotation, idle and absolute expiry, CSRF-protected sign-out, and server-side guards around admin routes.
 3. A minimal router matches HTTP method and path to a controller action.
 4. The controller reads request data, delegates validation/use cases, and selects a response or view.
 5. Services enforce business rules and coordinate repository calls and transactions.
@@ -47,7 +47,7 @@ Dependencies point inward from HTTP and persistence concerns toward application/
 
 ## Routing and rendering
 
-Routes are declared explicitly in `routes/web.php`, grouped conceptually into public and future admin routes. The router supports named single-segment parameters such as `/services/{id}` and passes matched values to controller callables. Route declarations remain readable and contain no business logic. PHP templates are chosen over a template engine to keep dependencies and learning surface small.
+Routes are declared explicitly in `routes/web.php`, grouped conceptually into public and authenticated admin routes. The router supports named single-segment parameters such as `/services/{id}` and passes matched values to controller callables. Route declarations remain readable and contain no business logic. PHP templates are chosen over a template engine to keep dependencies and learning surface small.
 
 ## Error handling and logging
 

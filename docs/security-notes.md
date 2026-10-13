@@ -30,7 +30,7 @@ Treat all request values, route parameters, headers, cookies, seed imports, and 
 - Use `password_hash()` with the current recommended PHP default and `password_verify()`.
 - Regenerate the session ID after sign-in and privilege changes.
 - Set cookies `HttpOnly`, `SameSite=Lax` (or stricter where usable), `Secure` under HTTPS, and an appropriate path.
-- Enforce idle/absolute timeouts and invalidate sessions on sign-out.
+- Enforce a 30-minute idle timeout and an 8-hour absolute lifetime for administrator sessions, and invalidate sessions on sign-out.
 - Use a generic login failure message and add rate limiting/backoff before public deployment.
 - Require authentication and authorization on every admin request.
 
