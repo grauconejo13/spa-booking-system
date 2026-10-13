@@ -7,7 +7,8 @@ namespace SpaBooking\Security;
 final class AdminSession
 {
     private const SESSION_KEY = 'admin_auth';
-    private const TIMEOUT_SECONDS = 1800;
+    private const IDLE_TIMEOUT_SECONDS = 1800;
+    private const ABSOLUTE_TIMEOUT_SECONDS = 28800;
 
     /** @param array<string, mixed> $session */
     public function __construct(private array &$session)
@@ -19,39 +20,64 @@ final class AdminSession
     {
         $auth = $this->session[self::SESSION_KEY] ?? null;
 
-        if (!is_array($auth)) {
+        if (!$this->isValidAuthPayload($auth)) {
+            $this->clear();
             return null;
         }
 
-        $lastSeenAt = (int) ($auth['last_seen_at'] ?? 0);
-        if ($lastSeenAt < time() - self::TIMEOUT_SECONDS) {
-            $this->logout();
+        $now = time();
+        if (
+            $auth['last_seen_at'] < $now - self::IDLE_TIMEOUT_SECONDS
+            || $auth['authenticated_at'] < $now - self::ABSOLUTE_TIMEOUT_SECONDS
+        ) {
+            $this->clear();
             return null;
         }
 
-        $this->session[self::SESSION_KEY]['last_seen_at'] = time();
+        $this->session[self::SESSION_KEY]['last_seen_at'] = $now;
 
         return [
-            'id' => (int) ($auth['id'] ?? 0),
-            'name' => (string) ($auth['name'] ?? ''),
-            'email' => (string) ($auth['email'] ?? ''),
+            'id' => $auth['id'],
+            'name' => $auth['name'],
+            'email' => $auth['email'],
         ];
     }
 
     public function login(int $id, string $name, string $email): void
     {
         session_regenerate_id(true);
+        $now = time();
+
         $this->session[self::SESSION_KEY] = [
             'id' => $id,
             'name' => $name,
             'email' => $email,
-            'last_seen_at' => time(),
+            'last_seen_at' => $now,
+            'authenticated_at' => $now,
         ];
     }
 
     public function logout(): void
     {
-        unset($this->session[self::SESSION_KEY]);
+        $this->clear();
         session_regenerate_id(true);
+    }
+
+    private function clear(): void
+    {
+        unset($this->session[self::SESSION_KEY]);
+    }
+
+    private function isValidAuthPayload(mixed $auth): bool
+    {
+        return is_array($auth)
+            && is_int($auth['id'] ?? null)
+            && $auth['id'] > 0
+            && is_string($auth['name'] ?? null)
+            && $auth['name'] !== ''
+            && is_string($auth['email'] ?? null)
+            && $auth['email'] !== ''
+            && is_int($auth['last_seen_at'] ?? null)
+            && is_int($auth['authenticated_at'] ?? null);
     }
 }
