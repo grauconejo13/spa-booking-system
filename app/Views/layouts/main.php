@@ -12,6 +12,7 @@ $pageTitle = isset($title) ? (string) $title . ' | Willow & Still Spa' : 'Willow
     <meta name="description" content="A fictional single-location spa booking portfolio project.">
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/admin.css">
     <script src="/assets/js/app.js" defer></script>
 </head>
 <body>

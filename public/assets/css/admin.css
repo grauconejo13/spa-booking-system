@@ -1,0 +1,114 @@
+.admin-auth-shell,
+.admin-dashboard-shell {
+    padding: clamp(3rem, 7vw, 5rem) 0;
+}
+
+.admin-auth-card {
+    max-width: 34rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.admin-auth-card h1,
+.admin-dashboard-header h1 {
+    font-size: clamp(2.2rem, 5vw, 4rem);
+}
+
+.admin-login-form {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.admin-login-form label {
+    display: grid;
+    gap: 0.4rem;
+    font-weight: 750;
+}
+
+.admin-login-form input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 0.35rem;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+}
+
+.form-alert {
+    padding: 0.9rem 1rem;
+    border: 1px solid #9a4949;
+    border-radius: 0.35rem;
+    background: #fff1f1;
+    color: #6f2424;
+}
+
+.admin-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.admin-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 54rem;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+.admin-table th {
+    background: var(--cream);
+    color: var(--forest-dark);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.status-pill {
+    display: inline-flex;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--sage);
+    color: var(--forest-dark);
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.status-cancelled {
+    background: #f4d7d7;
+    color: #6f2424;
+}
+
+.admin-empty-state {
+    padding: 2rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--cream);
+}
+
+@media (max-width: 640px) {
+    .admin-dashboard-header {
+        display: grid;
+    }
+}
