@@ -4,13 +4,13 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 
 > All names, appointments, customer details, services, prices, and other records in this repository are fictional mock data.
 
-## Planned feature summary
+## Feature summary
 
 - Public service catalogue with durations and prices
 - One fictional spa location with multiple fictional therapists and many-to-many service qualifications
 - Customer booking flow with therapist (or "any available therapist"), date/time selection, and confirmation
 - Per-therapist availability checks that prevent conflicting appointments
-- Admin sign-in and dashboard for reviewing and updating bookings
+- Admin sign-in, sign-out, and an upcoming-appointments dashboard with status filtering (view-only; editing appointment statuses is not implemented yet)
 - Server-side validation, CSRF protection, secure sessions, and prepared SQL
 - Responsive, accessible server-rendered pages with light JavaScript enhancement
 
@@ -21,6 +21,11 @@ date and time-slot selection now use a progressive, position-preserving flow wit
 availability states. A horizontal, server-rendered wizard validates customer details into a CSRF-protected,
 review while preserving backward navigation. Final confirmation revalidates availability in a transaction,
 creates a pending appointment, and redirects to a public-reference confirmation page.
+
+**Phase 4 is partially implemented.** The admin can sign in at `/admin/login`, sign out,
+and view upcoming appointments at `/admin`, optionally filtering by appointment status.
+The admin dashboard does **not** yet provide appointment detail pages or status changes.
+Login throttling, mutation workflows, and their dedicated integration tests remain future work.
 
 ## Technology stack
 
@@ -108,7 +113,7 @@ the three MySQL integration tests are skipped.
 
 ## Demo credentials
 
-The Phase 2 seed creates this fictional administrator for the Phase 4 demo sign-in screen at `/admin/login`:
+The Phase 2 seed creates this fictional administrator for the implemented Phase 4 demo sign-in screen at `/admin/login`:
 
 ```text
 Email:    admin@example.test
@@ -117,7 +122,7 @@ Password: SpaDemo!2026
 
 ## Screenshots
 
-Screenshots will be added after the customer and admin interfaces exist.
+Screenshots have not yet been captured. Add images of the implemented customer flow and read-only admin dashboard using fictional demo data only.
 
 - Customer service catalogue — _placeholder_
 - Appointment booking flow — _placeholder_
@@ -128,7 +133,7 @@ Screenshots will be added after the customer and admin interfaces exist.
 - [x] Phase 1: HTTP foundation, public informational pages, and planning
 - [x] Phase 2: therapist-aware database migrations, fictional seed data, and repositories
 - [x] Phase 3: therapist-aware customer catalogue and booking flow
-- [ ] Phase 4: admin authentication and appointment dashboard
+- [ ] Phase 4: admin dashboard (sign-in, sign-out, session security, upcoming list and status filtering implemented; editing and hardening pending)
 - [ ] Phase 5: automated testing, accessibility, security review, and polish
 
 Detailed implementation checklists live in [`tasks/`](tasks/), while product and technical decisions live in [`docs/`](docs/).
