@@ -15,7 +15,7 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 - [ ] Enforce allowed status transitions in a service.
 - [ ] Protect all admin mutations with CSRF tokens. Sign-in and sign-out are already CSRF-protected.
 - [ ] Add authentication, authorization, filtering, and transition tests.
-- [ ] Replace the README demo credential placeholder with fictional credentials and handling notes.
+- [x] Replace the README demo credential placeholder with fictional demo credentials. Do not reuse these credentials in a deployed environment.
 
 ## Acceptance criteria
 
