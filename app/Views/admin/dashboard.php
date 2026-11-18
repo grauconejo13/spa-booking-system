@@ -85,7 +85,7 @@ declare(strict_types=1);
                                         <?= htmlspecialchars(ucfirst((string) $appointment['status']), ENT_QUOTES, 'UTF-8') ?>
                                     </span>
                                 </td>
-                                <td><code><?= htmlspecialchars((string) $appointment['reference'], ENT_QUOTES, 'UTF-8') ?></code></td>
+                                <td><a href="/admin/appointments/<?= (int) $appointment['id'] ?>"><code><?= htmlspecialchars((string) $appointment['reference'], ENT_QUOTES, 'UTF-8') ?></code></a></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

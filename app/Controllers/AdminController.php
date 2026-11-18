@@ -87,6 +87,30 @@ final class AdminController
         ]));
     }
 
+    public function appointment(string $id): Response
+    {
+        $admin = $this->session->current();
+        if ($admin === null) {
+            return $this->redirect('/admin/login');
+        }
+
+        if (!ctype_digit($id) || (int) $id < 1) {
+            return new Response('Appointment not found.', 404, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        $appointment = $this->appointments->findById((int) $id);
+        if ($appointment === null) {
+            return new Response('Appointment not found.', 404, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        return new Response($this->views->render('admin/appointment-detail', [
+            'title' => 'Appointment detail',
+            'admin' => $admin,
+            'appointment' => $appointment,
+            'csrfToken' => $this->csrf->token(),
+        ]));
+    }
+
     /** @param array<string, mixed> $input */
     public function logout(array $input): Response
     {

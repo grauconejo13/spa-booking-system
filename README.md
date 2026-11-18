@@ -24,7 +24,7 @@ creates a pending appointment, and redirects to a public-reference confirmation 
 
 **Phase 4 is partially implemented.** The admin can sign in at `/admin/login`, sign out,
 and view upcoming appointments at `/admin`, optionally filtering by appointment status.
-The admin dashboard does **not** yet provide appointment detail pages or status changes.
+The admin dashboard now provides read-only appointment detail pages with minimally necessary customer information. It does **not** yet provide status changes.
 Login throttling, mutation workflows, and their dedicated integration tests remain future work.
 
 ## Technology stack

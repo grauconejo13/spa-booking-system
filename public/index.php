@@ -142,6 +142,7 @@ try {
     $adminLoginForm = static fn (): Response => $adminController()->loginForm();
     $adminLogin = static fn (): Response => $adminController()->login($_POST);
     $adminDashboard = static fn (): Response => $adminController()->dashboard($_GET);
+    $adminAppointment = static fn (string $id): Response => $adminController()->appointment($id);
     $adminLogout = static fn (): Response => $adminController()->logout($_POST);
 
     $router = new Router(
@@ -161,6 +162,7 @@ try {
         $adminLoginForm,
         $adminLogin,
         $adminDashboard,
+        $adminAppointment,
         $adminLogout
     );
 

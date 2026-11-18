@@ -11,7 +11,7 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 - [ ] Add login throttling/backoff appropriate to the demo deployment.
 - [x] Protect every admin route server-side.
 - [x] Build an upcoming appointment dashboard showing the assigned therapist, with status filtering. Add date filtering/pagination if the demo data grows.
-- [ ] Build an appointment detail view with minimally necessary customer information.
+- [x] Build an appointment detail view with minimally necessary customer information.
 - [ ] Enforce allowed status transitions in a service.
 - [ ] Protect all admin mutations with CSRF tokens. Sign-in and sign-out are already CSRF-protected.
 - [ ] Add authentication, authorization, filtering, and transition tests.
