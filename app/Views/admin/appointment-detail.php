@@ -64,8 +64,24 @@ $price = number_format(((int) $appointment['price_cents']) / 100, 2);
             </article>
         </div>
 
-        <p class="admin-results-summary">
-            Read-only view. Appointment status changes are not implemented yet.
-        </p>
+        <div class="detail-card">
+            <p class="eyebrow">Update status</p>
+            <?php if ($allowedStatusTransitions === []): ?>
+                <p class="admin-results-summary">This appointment is in a terminal status and cannot be changed.</p>
+            <?php else: ?>
+                <form method="post" action="/admin/appointments/<?= (int) $appointment['id'] ?>/status">
+                    <input type="hidden" name="_token" value="<?= htmlspecialchars((string) $csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                    <label for="appointment-status">Next status</label>
+                    <select id="appointment-status" name="status" required>
+                        <?php foreach ($allowedStatusTransitions as $status): ?>
+                            <option value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                                <?= htmlspecialchars(ucfirst($status), ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button class="button" type="submit">Update appointment</button>
+                </form>
+            <?php endif; ?>
+        </div>
     </div>
 </section>

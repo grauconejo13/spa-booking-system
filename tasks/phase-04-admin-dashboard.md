@@ -12,8 +12,8 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 - [x] Protect every admin route server-side.
 - [x] Build an upcoming appointment dashboard showing the assigned therapist, with status filtering. Add date filtering/pagination if the demo data grows.
 - [x] Build an appointment detail view with minimally necessary customer information.
-- [ ] Enforce allowed status transitions in a service.
-- [ ] Protect all admin mutations with CSRF tokens. Sign-in and sign-out are already CSRF-protected.
+- [x] Enforce allowed status transitions in a service.
+- [x] Protect all implemented admin mutations with CSRF tokens, including status changes.
 - [ ] Add authentication, authorization, filtering, and transition tests.
 - [x] Replace the README demo credential placeholder with fictional demo credentials. Do not reuse these credentials in a deployed environment.
 

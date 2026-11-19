@@ -9,6 +9,7 @@ use SpaBooking\Repositories\AdminAppointmentRepository;
 use SpaBooking\Security\AdminSession;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AdminAuthService;
+use SpaBooking\Services\AppointmentStatusService;
 use SpaBooking\View\ViewRenderer;
 
 final class AdminController
@@ -25,7 +26,8 @@ final class AdminController
         private readonly AdminAuthService $auth,
         private readonly AdminSession $session,
         private readonly CsrfTokenManager $csrf,
-        private readonly AdminAppointmentRepository $appointments
+        private readonly AdminAppointmentRepository $appointments,
+        private readonly AppointmentStatusService $appointmentStatuses
     ) {
     }
 
@@ -108,7 +110,41 @@ final class AdminController
             'admin' => $admin,
             'appointment' => $appointment,
             'csrfToken' => $this->csrf->token(),
+            'allowedStatusTransitions' => $this->appointmentStatuses->allowedTransitions((string) $appointment['status']),
         ]));
+    }
+
+    /** @param array<string, mixed> $input */
+    public function updateAppointmentStatus(string $id, array $input): Response
+    {
+        if ($this->session->current() === null) {
+            return $this->redirect('/admin/login');
+        }
+
+        if (!$this->csrf->validate($input['_token'] ?? null)) {
+            return new Response('Invalid request.', 419, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if (!ctype_digit($id) || (int) $id < 1) {
+            return new Response('Appointment not found.', 404, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        $appointment = $this->appointments->findById((int) $id);
+        if ($appointment === null) {
+            return new Response('Appointment not found.', 404, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        $currentStatus = (string) $appointment['status'];
+        $nextStatus = strtolower(trim((string) ($input['status'] ?? '')));
+        if (!$this->appointmentStatuses->canTransition($currentStatus, $nextStatus)) {
+            return new Response('Invalid appointment status transition.', 422, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        if (!$this->appointments->updateStatus((int) $id, $currentStatus, $nextStatus)) {
+            return new Response('Appointment changed before this update could be applied.', 409, ['Content-Type' => 'text/plain; charset=UTF-8']);
+        }
+
+        return $this->redirect('/admin/appointments/' . $id);
     }
 
     /** @param array<string, mixed> $input */

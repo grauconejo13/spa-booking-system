@@ -21,6 +21,7 @@ use SpaBooking\Repositories\TherapistRepository;
 use SpaBooking\Security\AdminSession;
 use SpaBooking\Security\CsrfTokenManager;
 use SpaBooking\Services\AdminAuthService;
+use SpaBooking\Services\AppointmentStatusService;
 use SpaBooking\Services\AvailabilityService;
 use SpaBooking\Services\BookingDraftStore;
 use SpaBooking\Services\BookingReferenceGenerator;
@@ -135,7 +136,8 @@ try {
             new AdminAuthService(new AdminUserRepository($pdo), $adminSession),
             $adminSession,
             $csrf,
-            new AdminAppointmentRepository($pdo)
+            new AdminAppointmentRepository($pdo),
+            new AppointmentStatusService()
         );
     };
 
@@ -143,6 +145,7 @@ try {
     $adminLogin = static fn (): Response => $adminController()->login($_POST);
     $adminDashboard = static fn (): Response => $adminController()->dashboard($_GET);
     $adminAppointment = static fn (string $id): Response => $adminController()->appointment($id);
+    $adminAppointmentStatus = static fn (string $id): Response => $adminController()->updateAppointmentStatus($id, $_POST);
     $adminLogout = static fn (): Response => $adminController()->logout($_POST);
 
     $router = new Router(
@@ -163,6 +166,7 @@ try {
         $adminLogin,
         $adminDashboard,
         $adminAppointment,
+        $adminAppointmentStatus,
         $adminLogout
     );
 

@@ -31,6 +31,23 @@ final class AdminAppointmentRepository
         return is_array($row) ? $row : null;
     }
 
+    public function updateStatus(int $id, string $expectedStatus, string $nextStatus): bool
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE appointments
+             SET status = :next_status
+             WHERE id = :id AND status = :expected_status'
+        );
+        assert($statement !== false);
+        $statement->execute([
+            'id' => $id,
+            'expected_status' => $expectedStatus,
+            'next_status' => $nextStatus,
+        ]);
+
+        return $statement->rowCount() === 1;
+    }
+
     /** @return list<array<string, mixed>> */
     public function upcoming(?string $status = null, int $limit = 25): array
     {

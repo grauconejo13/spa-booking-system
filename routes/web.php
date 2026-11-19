@@ -18,6 +18,7 @@ return static function (
     callable $adminLogin,
     callable $adminDashboard,
     callable $adminAppointment,
+    callable $adminAppointmentStatus,
     callable $adminLogout
 ): void {
     $router->get('/', [$home, 'index']);
@@ -32,5 +33,6 @@ return static function (
     $router->post('/admin/login', $adminLogin);
     $router->get('/admin', $adminDashboard);
     $router->get('/admin/appointments/{id}', $adminAppointment);
+    $router->post('/admin/appointments/{id}/status', $adminAppointmentStatus);
     $router->post('/admin/logout', $adminLogout);
 };
