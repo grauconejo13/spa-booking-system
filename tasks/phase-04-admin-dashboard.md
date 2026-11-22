@@ -14,7 +14,8 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 - [x] Build an appointment detail view with minimally necessary customer information.
 - [x] Enforce allowed status transitions in a service.
 - [x] Protect all implemented admin mutations with CSRF tokens, including status changes.
-- [ ] Add authentication, authorization, filtering, and transition tests.
+- [ ] Add broader authentication, authorization, and filtering integration tests.
+- [x] Add focused unit coverage for allowed, terminal, and unknown appointment status transitions.
 - [x] Replace the README demo credential placeholder with fictional demo credentials. Do not reuse these credentials in a deployed environment.
 
 ## Acceptance criteria

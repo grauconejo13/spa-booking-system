@@ -10,7 +10,7 @@ A deliberately compact, full-stack portfolio application for browsing spa servic
 - One fictional spa location with multiple fictional therapists and many-to-many service qualifications
 - Customer booking flow with therapist (or "any available therapist"), date/time selection, and confirmation
 - Per-therapist availability checks that prevent conflicting appointments
-- Admin sign-in, sign-out, and an upcoming-appointments dashboard with status filtering (view-only; editing appointment statuses is not implemented yet)
+- Admin sign-in, sign-out, upcoming-appointments dashboard with status filtering, appointment detail views, and guarded status transitions
 - Server-side validation, CSRF protection, secure sessions, and prepared SQL
 - Responsive, accessible server-rendered pages with light JavaScript enhancement
 
@@ -24,8 +24,7 @@ creates a pending appointment, and redirects to a public-reference confirmation 
 
 **Phase 4 is partially implemented.** The admin can sign in at `/admin/login`, sign out,
 and view upcoming appointments at `/admin`, optionally filtering by appointment status.
-The admin dashboard now provides read-only appointment detail pages with minimally necessary customer information. It does **not** yet provide status changes.
-Login throttling, mutation workflows, and their dedicated integration tests remain future work.
+The admin dashboard now provides appointment detail pages with minimally necessary customer information and guarded status changes. Pending appointments can move to confirmed or cancelled; confirmed appointments can move to completed or cancelled. Completed and cancelled appointments are terminal. Status mutations are CSRF-protected and use an expected-current-status update so stale writes fail with a conflict instead of overwriting newer state. Login throttling and broader authentication/authorization integration coverage remain future work.
 
 ## Technology stack
 
@@ -133,7 +132,7 @@ Screenshots have not yet been captured. Add images of the implemented customer f
 - [x] Phase 1: HTTP foundation, public informational pages, and planning
 - [x] Phase 2: therapist-aware database migrations, fictional seed data, and repositories
 - [x] Phase 3: therapist-aware customer catalogue and booking flow
-- [ ] Phase 4: admin dashboard (sign-in, sign-out, session security, upcoming list and status filtering implemented; editing and hardening pending)
+- [ ] Phase 4: admin dashboard (sign-in, sign-out, session security, upcoming list, status filtering, appointment detail, and guarded status transitions implemented; login throttling and broader integration hardening pending)
 - [ ] Phase 5: automated testing, accessibility, security review, and polish
 
 Detailed implementation checklists live in [`tasks/`](tasks/), while product and technical decisions live in [`docs/`](docs/).
