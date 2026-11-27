@@ -87,4 +87,19 @@ final class AdminSessionTest extends TestCase
         self::assertNull($admin);
         self::assertArrayNotHasKey('admin_auth', $session);
     }
+    public function testLoginBackoffStartsAfterFiveFailuresAndClearsAfterSuccess(): void
+    {
+        $session = [];
+        $adminSession = new AdminSession($session);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $adminSession->recordLoginFailure();
+        }
+
+        self::assertGreaterThan(0, $adminSession->loginRetryAfterSeconds());
+
+        $adminSession->clearLoginFailures();
+
+        self::assertSame(0, $adminSession->loginRetryAfterSeconds());
+    }
 }

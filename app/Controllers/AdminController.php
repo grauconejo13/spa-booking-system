@@ -51,10 +51,19 @@ final class AdminController
             return new Response('Invalid request.', 419, ['Content-Type' => 'text/plain; charset=UTF-8']);
         }
 
+        $retryAfter = $this->session->loginRetryAfterSeconds();
+        if ($retryAfter > 0) {
+            return new Response('Too many sign-in attempts. Try again later.', 429, [
+                'Content-Type' => 'text/plain; charset=UTF-8',
+                'Retry-After' => (string) $retryAfter,
+            ]);
+        }
+
         $email = trim((string) ($input['email'] ?? ''));
         $password = (string) ($input['password'] ?? '');
 
         if ($email === '' || $password === '' || !$this->auth->attempt($email, $password)) {
+            $this->session->recordLoginFailure();
             return new Response($this->views->render('admin/login', [
                 'title' => 'Admin sign in',
                 'csrfToken' => $this->csrf->token(),
@@ -63,6 +72,7 @@ final class AdminController
             ]), 422);
         }
 
+        $this->session->clearLoginFailures();
         return $this->redirect('/admin');
     }
 

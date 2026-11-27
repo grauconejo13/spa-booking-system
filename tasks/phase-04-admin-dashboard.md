@@ -8,7 +8,7 @@ Provide a small authenticated interface for a fictional spa administrator to rev
 
 - [x] Seed one fictional admin with a securely generated password hash.
 - [x] Implement sign-in, sign-out, secure session settings, timeout, and session regeneration.
-- [ ] Add login throttling/backoff appropriate to the demo deployment.
+- [x] Add session-scoped login throttling/backoff appropriate to the demo deployment.
 - [x] Protect every admin route server-side.
 - [x] Build an upcoming appointment dashboard showing the assigned therapist, with status filtering. Add date filtering/pagination if the demo data grows.
 - [x] Build an appointment detail view with minimally necessary customer information.
